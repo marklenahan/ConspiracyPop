@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Conspiracy Hunter</title>
+<style>
+  :root {
+    --panel-width: 160px;
+    --ink: #222;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #eef3f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    touch-action: manipulation;
+  }
+
+  #game-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: var(--panel-width);
+    bottom: 0;
+    overflow: hidden;
+  }
+
+  #panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--panel-width);
+    height: 100%;
+    box-sizing: border-box;
+    background: #2b3440;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 12px;
+  }
+
+  .stat-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  #panel .label {
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9fb0c3;
+    margin-bottom: 6px;
+  }
+
+  #score {
+    font-size: 42px;
+    font-weight: 700;
+    transition: color 0.15s;
+  }
+
+  #score.flash-good { color: #6be675; }
+  #score.flash-bad { color: #ff6b6b; }
+
+  #timer {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  #highscore {
+    font-size: 20px;
+  }
+
+  #stats {
+    font-size: 12px;
+    color: #7f92a8;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 700px) {
+    :root {
+      --panel-height-mobile: 76px;
+    }
+
+    #game-area {
+      top: var(--panel-height-mobile);
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #panel {
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: var(--panel-height-mobile);
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 22px;
+      padding: 6px 10px;
+    }
+
+    .stat-group {
+      margin-bottom: 0;
+    }
+
+    #panel .label {
+      font-size: 9px;
+      margin-bottom: 2px;
+    }
+
+    #score {
+      font-size: 22px;
+    }
+
+    #timer {
+      font-size: 18px;
+    }
+
+    #highscore {
+      font-size: 16px;
+    }
+
+    #stats {
+      display: none;
+    }
+
+    #flash-overlay {
+      top: var(--panel-height-mobile);
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #countdown {
+      top: var(--panel-height-mobile);
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+  }
+
+  .target {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    animation: pop-in 0.12s ease-out;
+  }
+
+  .target svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  @keyframes pop-in {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .target.exploding {
+    animation: explode 0.35s ease-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes explode {
+    0%   { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
+    40%  { transform: scale(1.6) rotate(15deg); opacity: 1; filter: brightness(2) saturate(3); }
+    100% { transform: scale(2.2) rotate(30deg); opacity: 0; filter: brightness(2) saturate(3); }
+  }
+
+  .target.fizzling {
+    animation: fizzle 0.4s ease-in forwards;
+    pointer-events: none;
+  }
+
+  @keyframes fizzle {
+    0%   { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.5); opacity: 0; }
+  }
+
+  .target.clicked-good {
+    animation: pop-out 0.2s ease-in forwards;
+    pointer-events: none;
+  }
+
+  @keyframes pop-out {
+    0%   { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  .floater {
+    position: absolute;
+    font-weight: 700;
+    font-size: 22px;
+    pointer-events: none;
+    animation: float-up 0.8s ease-out forwards;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  @keyframes float-up {
+    0%   { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
+  }
+
+  #flash-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: var(--panel-width);
+    bottom: 0;
+    background: rgba(255, 0, 0, 0.35);
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  #flash-overlay.hit {
+    animation: flash-red 0.35s ease-out;
+  }
+
+  @keyframes flash-red {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(238, 243, 247, 0.97);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    text-align: center;
+  }
+
+  .overlay .card {
+    max-width: 420px;
+    padding: 30px;
+  }
+
+  .overlay h1 {
+    margin: 0 0 10px;
+    color: var(--ink);
+  }
+
+  .overlay p {
+    color: #555;
+    line-height: 1.5;
+  }
+
+  .overlay .score-line {
+    font-size: 20px;
+    color: var(--ink);
+    margin: 6px 0;
+  }
+
+  .overlay .score-line strong {
+    font-size: 26px;
+  }
+
+  .overlay button {
+    margin-top: 18px;
+    padding: 12px 28px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    background: #2b3440;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .overlay button:hover {
+    background: #3c4a5c;
+  }
+
+  #countdown {
+    position: absolute;
+    top: 0; left: 0; right: var(--panel-width); bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    font-weight: 700;
+    color: var(--ink);
+    z-index: 15;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-area"></div>
+<div id="flash-overlay"></div>
+
+<div id="panel">
+  <div class="stat-group">
+    <div class="label">Score</div>
+    <div id="score">0</div>
+  </div>
+  <div class="stat-group">
+    <div class="label">Time</div>
+    <div id="timer">60</div>
+  </div>
+  <div class="stat-group">
+    <div class="label">High Score</div>
+    <div id="highscore">0</div>
+  </div>
+  <div id="stats">Click objects for +1.<br>Missed ones cost -1.<br>Never click the bomb (-5).</div>
+</div>
+
+<div id="start-screen" class="overlay">
+  <div class="card">
+    <h1>Conspiracy Hunter</h1>
+    <p>
+      Suspicious objects &mdash; birds, UFOs, greys, hats, and more &mdash; will start appearing around the screen.
+      Click (or tap) each one before it vanishes to score a point. Miss one and it costs you a point.<br><br>
+      Watch out for the <strong>bomb</strong> &mdash; click it and you lose 5 points! Leave it alone and it fizzles out safely.<br><br>
+      You have <strong>60 seconds</strong>. Good luck, agent.
+    </p>
+    <button id="start-btn">Start Game</button>
+  </div>
+</div>
+
+<div id="end-screen" class="overlay" style="display:none;">
+  <div class="card">
+    <h1>Time's Up</h1>
+    <div class="score-line">Final Score: <strong id="final-score">0</strong></div>
+    <div class="score-line">Highest Score: <strong id="final-highscore">0</strong></div>
+    <button id="restart-btn">Play Again</button>
+  </div>
+</div>
+
+<div id="countdown" style="display:none;"></div>
+
+<script>
+(function () {
+  const gameArea = document.getElementById('game-area');
+  const scoreEl = document.getElementById('score');
+  const timerEl = document.getElementById('timer');
+  const highscoreEl = document.getElementById('highscore');
+  const flashOverlay = document.getElementById('flash-overlay');
+  const startScreen = document.getElementById('start-screen');
+  const startBtn = document.getElementById('start-btn');
+  const endScreen = document.getElementById('end-screen');
+  const restartBtn = document.getElementById('restart-btn');
+  const finalScoreEl = document.getElementById('final-score');
+  const finalHighscoreEl = document.getElementById('final-highscore');
+  const countdownEl = document.getElementById('countdown');
+
+  const HIGH_SCORE_KEY = 'conspiracyHunterHighScore';
+  let score = 0;
+  let highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
+  highscoreEl.textContent = highScore;
+  let activeTargets = []; // {x, y, size, el, timeoutId}
+  let spawnTimer = null;
+  let timerInterval = null;
+  let gameStartTime = null;
+
+  const OBJECT_SIZE_MIN = 56;
+  const OBJECT_SIZE_MAX = 84;
+  const NORMAL_LIFETIME_MS = 1000;
+  const BOMB_LIFETIME_MS = 2000;
+  const RAMP_DURATION_MS = 55000; // time to reach max spawn rate (slow, steady ramp)
+  const START_INTERVAL_MS = 2000; // 1 every 2s
+  const END_INTERVAL_MS = 500;    // 2 per second
+  const BOMB_CHANCE = 0.1;
+  const GAME_DURATION_MS = 60000;
+
+  const ICONS = {
+    duck: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="38" cy="62" rx="30" ry="20"/>
+      <circle cx="62" cy="40" r="14"/>
+      <circle cx="66" cy="36" r="2" fill="#222"/>
+      <ellipse cx="83" cy="40" rx="11" ry="6" fill="#e8930c" stroke="#222"/>
+      <path d="M18,58 Q34,44 50,56" fill="none"/>
+      <path d="M14,50 C6,48 6,40 14,38"/>
+    </svg>`,
+    hat: `<svg viewBox="0 0 100 100" stroke="#111" stroke-width="4" fill="#111" stroke-linejoin="round">
+      <ellipse cx="50" cy="72" rx="38" ry="9"/>
+      <path d="M28,70 L32,28 C32,20 68,20 68,28 L72,70 Z"/>
+      <rect x="30" y="60" width="40" height="7" fill="#c0392b" stroke="none"/>
+    </svg>`,
+    binoculars: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="16" y="36" width="28" height="42" rx="12" fill="#3a3f47"/>
+      <rect x="56" y="36" width="28" height="42" rx="12" fill="#3a3f47"/>
+      <path d="M44,46 Q50,40 56,46" fill="none"/>
+      <circle cx="50" cy="46" r="3" fill="#222"/>
+      <circle cx="30" cy="66" r="10" fill="#8ecae6" stroke="#222"/>
+      <circle cx="70" cy="66" r="10" fill="#8ecae6" stroke="#222"/>
+      <circle cx="30" cy="46" r="6" fill="#5c636e" stroke="#222"/>
+      <circle cx="70" cy="46" r="6" fill="#5c636e" stroke="#222"/>
+    </svg>`,
+    magnifier: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="42" cy="42" r="24" fill="#eaf4fb"/>
+      <path d="M60,60 L84,84" stroke="#6b4423" stroke-width="10"/>
+      <path d="M27,32 A18,18 0 0,1 42,20" stroke="#fff" stroke-width="4" fill="none"/>
+    </svg>`,
+    wool: `<svg viewBox="0 0 100 100" stroke="none" fill="none">
+      <circle cx="48" cy="55" r="30" fill="#c0392b"/>
+      <path d="M20,48 Q48,28 76,46" stroke="#8e2118" stroke-width="4" fill="none"/>
+      <path d="M18,58 Q48,78 78,60" stroke="#8e2118" stroke-width="4" fill="none"/>
+      <path d="M24,32 Q46,55 26,82" stroke="#8e2118" stroke-width="4" fill="none"/>
+      <path d="M70,30 Q50,55 72,80" stroke="#8e2118" stroke-width="4" fill="none"/>
+      <path d="M40,26 Q48,55 58,84" stroke="#8e2118" stroke-width="3" fill="none" opacity="0.7"/>
+      <path d="M74,42 Q94,34 90,16" stroke="#c0392b" stroke-width="6" fill="none" stroke-linecap="round"/>
+    </svg>`,
+    airplane: `<svg viewBox="0 0 100 100" fill="#2c3e50" stroke="none">
+      <path d="M50,10 L56,38 L92,58 L92,66 L57,53 L60,80 L74,90 L74,96 L50,90 L26,96 L26,90 L40,80 L43,53 L8,66 L8,58 L44,38 Z"/>
+    </svg>`,
+    syringe: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10,50 L25,50" stroke="#888" stroke-width="3"/>
+      <rect x="18" y="38" width="6" height="24" fill="#ccc"/>
+      <rect x="25" y="42" width="40" height="16" rx="3" fill="#eaf4fb"/>
+      <rect x="27" y="44" width="20" height="12" fill="#5bc0de" stroke="none"/>
+      <rect x="65" y="46" width="20" height="8" fill="#ccc"/>
+      <rect x="83" y="38" width="6" height="20" fill="#ccc"/>
+    </svg>`,
+    moon: `<svg viewBox="0 0 100 100" stroke="none" fill="none">
+      <path d="M55,15 A35,35 0 1,0 55,85 A27,35 0 1,1 55,15 Z" fill="#f4d35e"/>
+    </svg>`,
+    crown: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" fill="none" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M20,70 L20,48 L35,62 L50,36 L65,62 L80,48 L80,70 Z" fill="#f1c40f"/>
+      <rect x="20" y="70" width="60" height="12" rx="2" fill="#f1c40f"/>
+      <circle cx="20" cy="48" r="4" fill="#c0392b" stroke="none"/>
+      <circle cx="50" cy="36" r="5" fill="#2980b9" stroke="none"/>
+      <circle cx="80" cy="48" r="4" fill="#c0392b" stroke="none"/>
+      <circle cx="50" cy="76" r="4" fill="#27ae60" stroke="none"/>
+    </svg>`,
+    testtube: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40,15 L40,60 C40,74 60,74 60,60 L60,15"/>
+      <path d="M34,15 L66,15"/>
+      <path d="M42,50 C46,54 54,54 58,50 L58,60 C58,68 42,68 42,60 Z" fill="#5bc0de" stroke="none"/>
+    </svg>`,
+    bomb: `<svg viewBox="0 0 100 100" stroke="#111" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="48" cy="60" r="28" fill="#1c1c1c" stroke="#000"/>
+      <circle cx="38" cy="50" r="6" fill="#555" stroke="none" opacity="0.6"/>
+      <path d="M60,36 C64,26 72,22 80,24" stroke="#7a4a1e"/>
+      <circle cx="81" cy="21" r="5" fill="#ffb347" stroke="#e07b00"/>
+    </svg>`,
+    ufo: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="50" cy="40" rx="17" ry="15" fill="#dfe7ee"/>
+      <ellipse cx="50" cy="55" rx="42" ry="13" fill="#93a5b8"/>
+      <circle cx="22" cy="58" r="3" fill="#ffd23f" stroke="none"/>
+      <circle cx="38" cy="61" r="3" fill="#ffd23f" stroke="none"/>
+      <circle cx="62" cy="61" r="3" fill="#ffd23f" stroke="none"/>
+      <circle cx="78" cy="58" r="3" fill="#ffd23f" stroke="none"/>
+    </svg>`,
+    alien: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" fill="none" stroke-linejoin="round">
+      <path d="M50,16 C69,16 80,33 76,50 C72,66 62,82 50,84 C38,82 28,66 24,50 C20,33 31,16 50,16 Z" fill="#b9c6d1"/>
+      <ellipse cx="37" cy="47" rx="10" ry="6" fill="#111" stroke="none" transform="rotate(-18 37 47)"/>
+      <ellipse cx="63" cy="47" rx="10" ry="6" fill="#111" stroke="none" transform="rotate(18 63 47)"/>
+    </svg>`,
+    whitehat: `<svg viewBox="0 0 100 100" stroke="#111" stroke-width="4" fill="#fff" stroke-linejoin="round">
+      <ellipse cx="50" cy="72" rx="38" ry="9"/>
+      <path d="M28,70 L32,28 C32,20 68,20 68,28 L72,70 Z"/>
+      <rect x="30" y="60" width="40" height="7" fill="#111" stroke="none"/>
+    </svg>`,
+    target: `<svg viewBox="0 0 100 100" stroke="none" fill="none">
+      <circle cx="50" cy="50" r="34" fill="#fff" stroke="#c0392b" stroke-width="4"/>
+      <circle cx="50" cy="50" r="22" fill="#c0392b"/>
+      <circle cx="50" cy="50" r="10" fill="#fff"/>
+    </svg>`,
+    dollar: `<svg viewBox="0 0 100 100">
+      <text x="50" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="bold" text-anchor="middle" fill="#1e8f4e">$</text>
+    </svg>`,
+    qletter: `<svg viewBox="0 0 100 100">
+      <text x="50" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="bold" text-anchor="middle" fill="#c0392b">Q</text>
+    </svg>`,
+    pyramid: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M50,18 L86,80 L14,80 Z" fill="#d9b25c"/>
+      <path d="M50,18 L50,80"/>
+      <ellipse cx="50" cy="46" rx="8" ry="5" fill="#fff" stroke="#222"/>
+      <circle cx="50" cy="46" r="2.5" fill="#222"/>
+    </svg>`
+  };
+  const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'target', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown'];
+
+  let audioCtx = null;
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } else if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  }
+
+  function playPop() {
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(700, t);
+    osc.frequency.exponentialRampToValueAtTime(180, t + 0.08);
+    gain.gain.setValueAtTime(0.3, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.1);
+  }
+
+  function playBoom() {
+    if (!audioCtx) return;
+    const t = audioCtx.currentTime;
+
+    const osc = audioCtx.createOscillator();
+    const oscGain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, t);
+    osc.frequency.exponentialRampToValueAtTime(28, t + 0.4);
+    oscGain.gain.setValueAtTime(0.5, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    osc.connect(oscGain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.45);
+
+    const bufferSize = Math.floor(audioCtx.sampleRate * 0.3);
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(0.4, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    noise.connect(noiseGain).connect(audioCtx.destination);
+    noise.start(t);
+  }
+
+  function updateScore(delta) {
+    score += delta;
+    if (score > highScore) {
+      highScore = score;
+      highscoreEl.textContent = highScore;
+      localStorage.setItem(HIGH_SCORE_KEY, String(highScore));
+    }
+    scoreEl.textContent = score;
+    scoreEl.classList.remove('flash-good', 'flash-bad');
+    void scoreEl.offsetWidth; // restart animation
+    scoreEl.classList.add(delta >= 0 ? 'flash-good' : 'flash-bad');
+  }
+
+  function showFloater(x, y, size, text, color) {
+    const f = document.createElement('div');
+    f.className = 'floater';
+    f.textContent = text;
+    f.style.left = (x + size / 2) + 'px';
+    f.style.top = y + 'px';
+    f.style.color = color;
+    gameArea.appendChild(f);
+    setTimeout(() => f.remove(), 850);
+  }
+
+  function rectsOverlap(a, b, pad) {
+    return !(
+      a.x + a.size + pad < b.x ||
+      b.x + b.size + pad < a.x ||
+      a.y + a.size + pad < b.y ||
+      b.y + b.size + pad < a.y
+    );
+  }
+
+  function findFreeSpot(size) {
+    const areaW = gameArea.clientWidth;
+    const areaH = gameArea.clientHeight;
+    const maxX = Math.max(0, areaW - size);
+    const maxY = Math.max(0, areaH - size);
+    const attempts = 40;
+    for (let i = 0; i < attempts; i++) {
+      const candidate = {
+        x: Math.random() * maxX,
+        y: Math.random() * maxY,
+        size: size
+      };
+      const collides = activeTargets.some(t => rectsOverlap(candidate, t, 8));
+      if (!collides) return candidate;
+    }
+    return null;
+  }
+
+  function removeTarget(target, exitClass) {
+    target.el.classList.add(exitClass);
+    activeTargets = activeTargets.filter(t => t !== target);
+    setTimeout(() => target.el.remove(), 450);
+  }
+
+  function spawnObject() {
+    const isBomb = Math.random() < BOMB_CHANCE;
+    const type = isBomb ? 'bomb' : NORMAL_TYPES[Math.floor(Math.random() * NORMAL_TYPES.length)];
+    const size = OBJECT_SIZE_MIN + Math.random() * (OBJECT_SIZE_MAX - OBJECT_SIZE_MIN);
+    const spot = findFreeSpot(size);
+    if (!spot) return; // no room right now, skip this spawn
+
+    const el = document.createElement('div');
+    el.className = 'target';
+    el.style.left = spot.x + 'px';
+    el.style.top = spot.y + 'px';
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    el.innerHTML = ICONS[type];
+
+    const target = { x: spot.x, y: spot.y, size: size, el: el, type: type, timeoutId: null };
+    activeTargets.push(target);
+    gameArea.appendChild(el);
+
+    let resolved = false;
+
+    const lifetime = isBomb ? BOMB_LIFETIME_MS : NORMAL_LIFETIME_MS;
+    const timeoutId = setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
+      if (isBomb) {
+        removeTarget(target, 'fizzling');
+      } else {
+        removeTarget(target, 'exploding');
+        updateScore(-1);
+        showFloater(spot.x, spot.y, size, '-1', '#ff6b6b');
+      }
+    }, lifetime);
+    target.timeoutId = timeoutId;
+
+    const onActivate = (e) => {
+      e.preventDefault();
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeoutId);
+      el.removeEventListener('pointerdown', onActivate);
+      if (isBomb) {
+        removeTarget(target, 'exploding');
+        updateScore(-5);
+        showFloater(spot.x, spot.y, size, '-5', '#ff3b3b');
+        flashOverlay.classList.remove('hit');
+        void flashOverlay.offsetWidth;
+        flashOverlay.classList.add('hit');
+        playBoom();
+      } else {
+        removeTarget(target, 'clicked-good');
+        updateScore(1);
+        showFloater(spot.x, spot.y, size, '+1', '#6be675');
+        playPop();
+      }
+    };
+    el.addEventListener('pointerdown', onActivate);
+  }
+
+  function currentInterval() {
+    const elapsed = Date.now() - gameStartTime;
+    const t = Math.min(elapsed / RAMP_DURATION_MS, 1);
+    return START_INTERVAL_MS + (END_INTERVAL_MS - START_INTERVAL_MS) * t;
+  }
+
+  function scheduleNext() {
+    const interval = currentInterval();
+    spawnTimer = setTimeout(() => {
+      spawnObject();
+      scheduleNext();
+    }, interval);
+  }
+
+  function tickTimer() {
+    const elapsed = Date.now() - gameStartTime;
+    const remaining = Math.max(0, GAME_DURATION_MS - elapsed);
+    timerEl.textContent = Math.ceil(remaining / 1000);
+    if (remaining <= 0) {
+      endGame();
+    }
+  }
+
+  function beginSpawning() {
+    gameStartTime = Date.now();
+    tickTimer();
+    timerInterval = setInterval(tickTimer, 200);
+    scheduleNext();
+  }
+
+  function endGame() {
+    if (timerInterval) clearInterval(timerInterval);
+    if (spawnTimer) clearTimeout(spawnTimer);
+    activeTargets.forEach(t => {
+      clearTimeout(t.timeoutId);
+      t.el.remove();
+    });
+    activeTargets = [];
+    finalScoreEl.textContent = score;
+    finalHighscoreEl.textContent = highScore;
+    endScreen.style.display = 'flex';
+  }
+
+  function startGame() {
+    ensureAudio();
+    startScreen.style.display = 'none';
+    endScreen.style.display = 'none';
+    score = 0;
+    scoreEl.textContent = '0';
+    timerEl.textContent = Math.ceil(GAME_DURATION_MS / 1000);
+    if (timerInterval) clearInterval(timerInterval);
+    if (spawnTimer) clearTimeout(spawnTimer);
+    activeTargets.forEach(t => {
+      clearTimeout(t.timeoutId);
+      t.el.remove();
+    });
+    activeTargets = [];
+
+    let count = 2;
+    countdownEl.style.display = 'flex';
+    countdownEl.textContent = count;
+    const tick = setInterval(() => {
+      count -= 1;
+      if (count > 0) {
+        countdownEl.textContent = count;
+      } else {
+        clearInterval(tick);
+        countdownEl.style.display = 'none';
+        beginSpawning();
+      }
+    }, 700);
+  }
+
+  startBtn.addEventListener('click', startGame);
+  restartBtn.addEventListener('click', startGame);
+})();
+</script>
+
+</body>
+</html>
