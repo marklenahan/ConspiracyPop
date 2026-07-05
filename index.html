@@ -77,11 +77,45 @@
     font-size: 20px;
   }
 
+  #combo {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f4d35e;
+  }
+
   #stats {
     font-size: 12px;
     color: #7f92a8;
     text-align: center;
     line-height: 1.6;
+  }
+
+  #mute-btn {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #2b3440;
+    color: #cdd7e4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    z-index: 30;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  }
+
+  #mute-btn:hover {
+    background: #3c4a5c;
+  }
+
+  #mute-btn svg {
+    width: 16px;
+    height: 16px;
   }
 
   @media (max-width: 700px) {
@@ -105,8 +139,8 @@
       flex-direction: row;
       justify-content: center;
       align-items: center;
-      gap: 22px;
-      padding: 6px 10px;
+      gap: 14px;
+      padding: 6px 40px 6px 10px;
     }
 
     .stat-group {
@@ -114,24 +148,40 @@
     }
 
     #panel .label {
-      font-size: 9px;
+      font-size: 8px;
       margin-bottom: 2px;
     }
 
     #score {
-      font-size: 22px;
+      font-size: 20px;
     }
 
     #timer {
-      font-size: 18px;
+      font-size: 16px;
     }
 
     #highscore {
-      font-size: 16px;
+      font-size: 14px;
+    }
+
+    #combo {
+      font-size: 14px;
     }
 
     #stats {
       display: none;
+    }
+
+    #mute-btn {
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+    }
+
+    #mute-btn svg {
+      width: 14px;
+      height: 14px;
     }
 
     #flash-overlay {
@@ -214,6 +264,36 @@
   @keyframes float-up {
     0%   { transform: translateY(0); opacity: 1; }
     100% { transform: translateY(-50px); opacity: 0; }
+  }
+
+  .inline-icon {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    vertical-align: middle;
+    position: relative;
+    top: -2px;
+  }
+
+  .inline-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .skull-icon {
+    position: absolute;
+    pointer-events: none;
+    animation: skull-fade 1s ease-out forwards;
+  }
+
+  .skull-icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  @keyframes skull-fade {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   #flash-overlay {
@@ -308,6 +388,7 @@
 
 <div id="game-area"></div>
 <div id="flash-overlay"></div>
+<button id="mute-btn" aria-label="Mute sound" title="Mute sound"></button>
 
 <div id="panel">
   <div class="stat-group">
@@ -322,7 +403,11 @@
     <div class="label">High Score</div>
     <div id="highscore">0</div>
   </div>
-  <div id="stats">Click objects for +1.<br>Missed ones cost -1.<br>Never click the bomb (-5).</div>
+  <div class="stat-group">
+    <div class="label">Combo</div>
+    <div id="combo">x1</div>
+  </div>
+  <div id="stats">Click objects to score &mdash; chain hits to build your combo.<br>Missed ones cost -1 and break your combo.<br>Never click the bomb (-5, also breaks combo).</div>
 </div>
 
 <div id="start-screen" class="overlay">
@@ -330,8 +415,9 @@
     <h1>Conspiracy Hunter</h1>
     <p>
       Suspicious objects &mdash; birds, UFOs, greys, hats, and more &mdash; will start appearing around the screen.
-      Click (or tap) each one before it vanishes to score a point. Miss one and it costs you a point.<br><br>
-      Watch out for the <strong>bomb</strong> &mdash; click it and you lose 5 points! Leave it alone and it fizzles out safely.<br><br>
+      Click (or tap) each one before it vanishes to score a point &mdash; chain hits in a row to build a combo multiplier.
+      Miss one and it costs you a point and breaks your combo.<br><br>
+      Watch out for the <strong>bomb</strong> <span id="bomb-preview" class="inline-icon"></span> &mdash; click it and you lose 5 points (and your combo)! Leave it alone and it fizzles out safely.<br><br>
       You have <strong>60 seconds</strong>. Good luck, agent.
     </p>
     <button id="start-btn">Start Game</button>
@@ -355,6 +441,8 @@
   const scoreEl = document.getElementById('score');
   const timerEl = document.getElementById('timer');
   const highscoreEl = document.getElementById('highscore');
+  const comboEl = document.getElementById('combo');
+  const muteBtn = document.getElementById('mute-btn');
   const flashOverlay = document.getElementById('flash-overlay');
   const startScreen = document.getElementById('start-screen');
   const startBtn = document.getElementById('start-btn');
@@ -365,7 +453,10 @@
   const countdownEl = document.getElementById('countdown');
 
   const HIGH_SCORE_KEY = 'conspiracyHunterHighScore';
+  const MUTE_KEY = 'conspiracyHunterMuted';
   let score = 0;
+  let streak = 0;
+  let muted = localStorage.getItem(MUTE_KEY) === 'true';
   let highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
   highscoreEl.textContent = highScore;
   let activeTargets = []; // {x, y, size, el, timeoutId}
@@ -375,7 +466,7 @@
 
   const OBJECT_SIZE_MIN = 56;
   const OBJECT_SIZE_MAX = 84;
-  const NORMAL_LIFETIME_MS = 1000;
+  const NORMAL_LIFETIME_MS = 2000;
   const BOMB_LIFETIME_MS = 2000;
   const RAMP_DURATION_MS = 55000; // time to reach max spawn rate (slow, steady ramp)
   const START_INTERVAL_MS = 2000; // 1 every 2s
@@ -498,6 +589,54 @@
   };
   const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'target', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown'];
 
+  document.getElementById('bomb-preview').innerHTML = ICONS.bomb;
+
+  const SKULL_ICON = `<svg viewBox="0 0 100 100">
+    <path d="M50,14 C70,14 82,30 82,48 C82,60 76,68 70,73 L70,84 C70,87 67,89 64,89 L58,89 C55,89 53,87 53,84 L53,78 L47,78 L47,84 C47,87 45,89 42,89 L36,89 C33,89 30,87 30,84 L30,73 C24,68 18,60 18,48 C18,30 30,14 50,14 Z" fill="#eceff1" stroke="#222" stroke-width="4" stroke-linejoin="round"/>
+    <ellipse cx="36" cy="46" rx="9" ry="11" fill="#222"/>
+    <ellipse cx="64" cy="46" rx="9" ry="11" fill="#222"/>
+    <path d="M50,55 L44,68 L56,68 Z" fill="#222"/>
+    <path d="M40,74 L40,80 M46,74 L46,80 M54,74 L54,80 M60,74 L60,80" stroke="#222" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+
+  const SPEAKER_ON_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M19 6a9 9 0 0 1 0 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
+  const SPEAKER_OFF_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+
+  function updateMuteIcon() {
+    muteBtn.innerHTML = muted ? SPEAKER_OFF_ICON : SPEAKER_ON_ICON;
+  }
+  updateMuteIcon();
+
+  muteBtn.addEventListener('click', () => {
+    muted = !muted;
+    localStorage.setItem(MUTE_KEY, String(muted));
+    updateMuteIcon();
+  });
+
+  const COMBO_STEP = 3;   // consecutive hits needed to advance a multiplier tier
+  const MAX_MULTIPLIER = 5;
+
+  function getMultiplier(streakCount) {
+    return Math.min(1 + Math.floor(streakCount / COMBO_STEP), MAX_MULTIPLIER);
+  }
+
+  function updateComboDisplay() {
+    comboEl.textContent = 'x' + getMultiplier(streak);
+  }
+
+  function showSkull(x, y, size) {
+    const skullSize = size * 0.55;
+    const el = document.createElement('div');
+    el.className = 'skull-icon';
+    el.style.left = (x + (size - skullSize) / 2) + 'px';
+    el.style.top = (y + (size - skullSize) / 2) + 'px';
+    el.style.width = skullSize + 'px';
+    el.style.height = skullSize + 'px';
+    el.innerHTML = SKULL_ICON;
+    gameArea.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
   let audioCtx = null;
 
   function ensureAudio() {
@@ -509,7 +648,7 @@
   }
 
   function playPop() {
-    if (!audioCtx) return;
+    if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -524,7 +663,7 @@
   }
 
   function playBoom() {
-    if (!audioCtx) return;
+    if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
 
     const osc = audioCtx.createOscillator();
@@ -641,6 +780,9 @@
         removeTarget(target, 'exploding');
         updateScore(-1);
         showFloater(spot.x, spot.y, size, '-1', '#ff6b6b');
+        showSkull(spot.x, spot.y, size);
+        streak = 0;
+        updateComboDisplay();
       }
     }, lifetime);
     target.timeoutId = timeoutId;
@@ -659,11 +801,16 @@
         void flashOverlay.offsetWidth;
         flashOverlay.classList.add('hit');
         playBoom();
+        streak = 0;
+        updateComboDisplay();
       } else {
         removeTarget(target, 'clicked-good');
-        updateScore(1);
-        showFloater(spot.x, spot.y, size, '+1', '#6be675');
+        const points = getMultiplier(streak);
+        updateScore(points);
+        showFloater(spot.x, spot.y, size, '+' + points, '#6be675');
         playPop();
+        streak += 1;
+        updateComboDisplay();
       }
     };
     el.addEventListener('pointerdown', onActivate);
@@ -718,6 +865,8 @@
     endScreen.style.display = 'none';
     score = 0;
     scoreEl.textContent = '0';
+    streak = 0;
+    updateComboDisplay();
     timerEl.textContent = Math.ceil(GAME_DURATION_MS / 1000);
     if (timerInterval) clearInterval(timerInterval);
     if (spawnTimer) clearTimeout(spawnTimer);
