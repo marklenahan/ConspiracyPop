@@ -1,5 +1,5 @@
 <!--
-  v1.1 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  v1.2 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
@@ -448,7 +448,7 @@
     </p>
     <button id="start-btn">Start Game</button>
     <p class="credit">
-      v1.1 html/js game by Claude Code and Mark Lenahan
+      v1.2 html/js game by Claude Code and Mark Lenahan
       (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
       <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
     </p>
@@ -792,6 +792,12 @@
     setTimeout(() => f.remove(), 850);
   }
 
+  function currentPos(el) {
+    const r = el.getBoundingClientRect();
+    const gr = gameArea.getBoundingClientRect();
+    return { x: r.left - gr.left, y: r.top - gr.top };
+  }
+
   function rectsOverlap(a, b, pad) {
     return !(
       a.x + a.size + pad < b.x ||
@@ -805,7 +811,7 @@
     const areaW = gameArea.clientWidth;
     const areaH = gameArea.clientHeight;
     const maxX = Math.max(0, areaW - size);
-    const maxY = Math.max(0, areaH - size);
+    const maxY = Math.max(0, areaH / 2 - size);
     const attempts = 40;
     for (let i = 0; i < attempts; i++) {
       const candidate = {
@@ -845,22 +851,32 @@
     gameArea.appendChild(el);
     playAppear();
 
+    const lifetime = isBomb ? BOMB_LIFETIME_MS : NORMAL_LIFETIME_MS;
+
+    // Slow fall: conservative distance so an object never reaches the
+    // bottom of the play area before its own timeout, even from the
+    // deepest possible top-half spawn point.
+    const fallDistance = gameArea.clientHeight * 0.22;
+    el.style.transition = `top ${lifetime}ms linear`;
+    void el.offsetHeight; // force reflow so the transition picks up the starting position
+    el.style.top = (spot.y + fallDistance) + 'px';
+
     let resolved = false;
 
-    const lifetime = isBomb ? BOMB_LIFETIME_MS : NORMAL_LIFETIME_MS;
     const timeoutId = setTimeout(() => {
       if (resolved) return;
       resolved = true;
       if (isBomb) {
         removeTarget(target, 'fizzling');
       } else {
+        const pos = currentPos(el);
         removeTarget(target, 'exploding');
         updateScore(-1);
-        showFloater(spot.x, spot.y, size, '-1', '#ff6b6b');
-        showSkull(spot.x, spot.y, size);
+        showFloater(pos.x, pos.y, size, '-1', '#ff6b6b');
+        showSkull(pos.x, pos.y, size);
         playMiss();
         if (streak > 0) {
-          showChainBroken(spot.x, spot.y, size);
+          showChainBroken(pos.x, pos.y, size);
         }
         streak = 0;
         updateComboDisplay();
@@ -874,10 +890,11 @@
       resolved = true;
       clearTimeout(timeoutId);
       el.removeEventListener('pointerdown', onActivate);
+      const pos = currentPos(el);
       if (isBomb) {
         removeTarget(target, 'exploding');
         updateScore(-5);
-        showFloater(spot.x, spot.y, size, '-5', '#ff3b3b');
+        showFloater(pos.x, pos.y, size, '-5', '#ff3b3b');
         flashOverlay.classList.remove('hit');
         void flashOverlay.offsetWidth;
         flashOverlay.classList.add('hit');
@@ -888,7 +905,7 @@
         removeTarget(target, 'clicked-good');
         const points = getMultiplier(streak);
         updateScore(points);
-        showFloater(spot.x, spot.y, size, '+' + points, '#6be675');
+        showFloater(pos.x, pos.y, size, '+' + points, '#6be675');
         playPop();
         streak += 1;
         updateComboDisplay();
