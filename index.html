@@ -1,5 +1,5 @@
 <!--
-  v1.4 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  v1.5 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
@@ -314,6 +314,37 @@
     font-size: 26px;
   }
 
+  .leaderboard {
+    margin: 14px 0;
+  }
+
+  .leaderboard .label {
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9aa5b1;
+    margin-bottom: 4px;
+  }
+
+  .leaderboard ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .leaderboard li {
+    font-size: 18px;
+    color: var(--ink);
+    padding: 2px 0;
+  }
+
+  .leaderboard li .rank {
+    display: inline-block;
+    width: 22px;
+    color: #9aa5b1;
+    font-weight: 700;
+  }
+
   .overlay button {
     margin-top: 18px;
     padding: 12px 28px;
@@ -505,7 +536,7 @@
     </div>
     <button id="start-btn">Start Game</button>
     <p class="credit">
-      v1.4 html/js game by Claude Code and Mark Lenahan
+      v1.5 html/js game by Claude Code and Mark Lenahan
       (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
       <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
     </p>
@@ -516,7 +547,10 @@
   <div class="card">
     <h1>Time's Up</h1>
     <div class="score-line">Final Score: <strong id="final-score">0</strong></div>
-    <div class="score-line">Highest Score: <strong id="final-highscore">0</strong></div>
+    <div class="leaderboard">
+      <div class="label">Top Scores</div>
+      <ol id="leaderboard-list"></ol>
+    </div>
     <button id="restart-btn">Play Again</button>
   </div>
 </div>
@@ -537,7 +571,7 @@
   const endScreen = document.getElementById('end-screen');
   const restartBtn = document.getElementById('restart-btn');
   const finalScoreEl = document.getElementById('final-score');
-  const finalHighscoreEl = document.getElementById('final-highscore');
+  const leaderboardListEl = document.getElementById('leaderboard-list');
   const countdownEl = document.getElementById('countdown');
 
   (function setupBackgroundRain() {
@@ -558,12 +592,26 @@
     }
   })();
 
-  const HIGH_SCORE_KEY = 'conspiracyHunterHighScore';
+  const LEADERBOARD_KEY = 'conspiracyHunterLeaderboard';
+  const LEGACY_HIGH_SCORE_KEY = 'conspiracyHunterHighScore'; // pre-leaderboard single high score, migrated below
   const MUTE_KEY = 'conspiracyHunterMuted';
+  const LEADERBOARD_SIZE = 3;
   let score = 0;
   let streak = 0;
   let muted = localStorage.getItem(MUTE_KEY) === 'true';
-  let highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
+
+  let leaderboard = [];
+  try {
+    leaderboard = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    if (!Array.isArray(leaderboard)) leaderboard = [];
+  } catch (e) {
+    leaderboard = [];
+  }
+  if (leaderboard.length === 0) {
+    const legacyScore = parseInt(localStorage.getItem(LEGACY_HIGH_SCORE_KEY) || '0', 10);
+    if (legacyScore > 0) leaderboard = [legacyScore];
+  }
+  let highScore = leaderboard.length ? leaderboard[0] : 0;
   highscoreEl.textContent = highScore;
   let activeTargets = []; // {x, y, size, el, timeoutId}
   let spawnTimer = null;
@@ -866,12 +914,30 @@
     if (score > highScore) {
       highScore = score;
       highscoreEl.textContent = highScore;
-      localStorage.setItem(HIGH_SCORE_KEY, String(highScore));
     }
     scoreEl.textContent = score;
     scoreEl.classList.remove('flash-good', 'flash-bad');
     void scoreEl.offsetWidth; // restart animation
     scoreEl.classList.add(delta >= 0 ? 'flash-good' : 'flash-bad');
+  }
+
+  function renderLeaderboard() {
+    leaderboardListEl.innerHTML = '';
+    for (let i = 0; i < LEADERBOARD_SIZE; i++) {
+      const li = document.createElement('li');
+      const value = leaderboard[i] !== undefined ? leaderboard[i] : '—';
+      li.innerHTML = '<span class="rank">' + (i + 1) + '.</span>' + value;
+      leaderboardListEl.appendChild(li);
+    }
+  }
+
+  function recordFinalScore(finalScore) {
+    leaderboard.push(finalScore);
+    leaderboard.sort((a, b) => b - a);
+    leaderboard = leaderboard.slice(0, LEADERBOARD_SIZE);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+    highScore = leaderboard[0];
+    highscoreEl.textContent = highScore;
   }
 
   function showFloater(x, y, size, text, color) {
@@ -1046,7 +1112,8 @@
     });
     activeTargets = [];
     finalScoreEl.textContent = score;
-    finalHighscoreEl.textContent = highScore;
+    recordFinalScore(score);
+    renderLeaderboard();
     endScreen.style.display = 'flex';
   }
 
