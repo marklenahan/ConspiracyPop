@@ -1,5 +1,5 @@
 <!--
-  v2.1 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  v2.2 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
@@ -537,7 +537,7 @@
     </div>
     <button id="start-btn">Start Game</button>
     <p class="credit">
-      v2.1 html/js game by Claude Code and Mark Lenahan
+      v2.2 html/js game by Claude Code and Mark Lenahan
       (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
       <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
     </p>
@@ -810,9 +810,34 @@
       <path d="M30,24 L50,4" stroke="#8a8a8a" stroke-width="6"/>
       <path d="M30,4 L50,24" stroke="#8a8a8a" stroke-width="6"/>
       <path d="M68,72 C68,78 62,83 62,88 C62,93 74,93 74,88 C74,83 68,78 68,72 Z" fill="#27ae60" stroke="none"/>
+    </svg>`,
+    cube: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="3" stroke-linejoin="round">
+      <path d="M50,15 L85,32 L50,50 L15,32 Z" fill="#e3e3e3"/>
+      <path d="M15,32 L50,50 L50,85 L15,68 Z" fill="#aaaaaa"/>
+      <path d="M85,32 L85,68 L50,85 L50,50 Z" fill="#787878"/>
+    </svg>`,
+    hollowearth: `<svg viewBox="0 0 100 100" stroke="none" fill="none">
+      <circle cx="50" cy="50" r="35" fill="none" stroke="#2e8b3d" stroke-width="10"/>
+      <circle cx="50" cy="57" r="5" fill="#222"/>
+      <path d="M50,62 L50,72" stroke="#222" stroke-width="3"/>
+      <path d="M50,65 L43,70 M50,65 L57,70" stroke="#222" stroke-width="3"/>
+      <path d="M50,72 L44,80 M50,72 L56,80" stroke="#222" stroke-width="3"/>
+    </svg>`,
+    turkey: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="3" stroke-linejoin="round">
+      <path d="M28,56 Q2,46 2,22 Q20,30 28,56 Z" fill="#8b4513"/>
+      <path d="M28,56 Q6,36 15,4 Q28,20 28,56 Z" fill="#c0622a"/>
+      <path d="M28,56 Q18,26 30,1 Q35,24 28,56 Z" fill="#d4881f"/>
+      <path d="M28,56 Q32,24 44,5 Q46,28 28,56 Z" fill="#c0622a"/>
+      <path d="M28,56 Q40,28 55,14 Q48,34 28,56 Z" fill="#8b4513"/>
+      <path d="M28,56 Q45,34 63,26 Q46,42 28,56 Z" fill="#d4881f"/>
+      <ellipse cx="45" cy="65" rx="26" ry="20" fill="#6b4226" stroke-linecap="round"/>
+      <circle cx="68" cy="55" r="11" fill="#6b4226"/>
+      <path d="M75,60 Q78,68 74,70" fill="#c0392b" stroke="#a52a1f" stroke-linecap="round"/>
+      <path d="M77,53 L85,55 L77,58 Z" fill="#e8930c" stroke="none"/>
+      <circle cx="71" cy="51" r="1.8" fill="#222" stroke="none"/>
     </svg>`
   };
-  const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown', 'tv', 'satellite', 'wifi', 'phone5g', 'watertap'];
+  const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown', 'tv', 'satellite', 'wifi', 'phone5g', 'watertap', 'cube', 'hollowearth', 'turkey'];
 
   document.getElementById('bomb-preview').innerHTML = ICONS.bomb;
 

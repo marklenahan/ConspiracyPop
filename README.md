@@ -36,7 +36,7 @@ Objects spawn anywhere in the top 75% of the play area and drift slowly downward
 
 Bomb aside, objects are drawn from a themed pool of icons:
 
-Duck, black hat, white hat, binoculars, test tube, UFO, grey alien, target, dollar bill, red letter Q, pyramid (with Eye of Providence), magnifying glass, ball of red wool, airplane, syringe, moon, royal crown.
+Duck, black hat, white hat, binoculars, test tube, UFO, grey alien, dollar bill, red letter Q (on a waving flag), pyramid (with Eye of Providence), magnifying glass, ball of red wool, airplane, syringe, moon, royal crown, TV screen, space satellite, wifi symbol, 5G phone, water tap, isometric cube, hollow earth (with a tiny stick figure standing on the inside), and a turkey.
 
 The start screen shows what the bomb icon actually looks like, right next to the warning about it.
 
