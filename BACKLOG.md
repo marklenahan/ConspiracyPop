@@ -3,8 +3,10 @@
 Ideas for future enhancements. Nothing here is scheduled or implemented — just notes to revisit later.
 
 ## 1. Some additional text labels
- 1.1 On the launch screen, show below the instructions, in smaller font: "html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)" - with links to https://www.linkedin.com/in/marklen/ and https://github.com/marklenahan/ConspiracyPop
+ 1.1 On the launch screen, show below the instructions, in smaller font: "v1.0 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)" - with links to https://www.linkedin.com/in/marklen/ and https://github.com/marklenahan/ConspiracyPop.
+Also add this text as a comment to top of the html, but show full URLs in subsequent comment lines.
  1.2. When a suspicious object (any icon, but not a bomb) times out, resulting in the loss of the chain combo, briefly display text "Chain broken!" below the skull that fades in the same way.
+For each subsequent change in this backlog, increase the version number by 0.1, e.g change 2 gives v1.1, change 3 gives v1.2, and so on.
 
 ## 2. Some additional subtle sounds
 Add these sounds at half the volume of the pop / click sound
