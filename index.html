@@ -3,6 +3,20 @@
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
+<!--
+  This file is a complete example of a small browser game built with only
+  HTML, CSS, and JavaScript - no frameworks or build tools required.
+    - The <style> section (in <head> below) controls how everything looks
+      and animates.
+    - The <body> contains the actual page elements: buttons, the score
+      panel, the start/end screens, and an empty <div id="game-area">
+      that JavaScript fills with objects while the game is running.
+    - The <script> near the bottom contains all the game logic.
+  New to these languages? Good starting points:
+    HTML:       https://www.w3schools.com/html/
+    CSS:        https://www.w3schools.com/css/
+    JavaScript: https://www.w3schools.com/js/
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,10 +24,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Conspiracy Hunter</title>
 <style>
+  /* :root defines CSS custom properties ("variables") that can be reused
+     anywhere below with var(--name). Handy for a value used in several
+     places - if you ever want a wider side panel, you only change it here.
+     Reference: https://www.w3schools.com/css/css3_variables.asp */
   :root {
     --panel-width: 160px;
     --ink: #222;
   }
+
+  /* Base page styles: remove the browser's default margin/padding, make
+     the page fill the whole screen, and stop scrollbars from appearing
+     (overflow: hidden) so the game always fits on one screen. */
   html, body {
     margin: 0;
     padding: 0;
@@ -25,6 +47,13 @@
     touch-action: manipulation;
   }
 
+  /* Full-screen container for the decorative background "rain" effect.
+     position: fixed pins it to the browser window itself (rather than
+     scrolling with the page); inset: 0 is shorthand for setting
+     top/right/bottom/left all to 0, stretching it to fill the screen.
+     pointer-events: none lets clicks pass straight through to the game
+     underneath, so the rain never blocks a click.
+     Reference: https://www.w3schools.com/css/css_positioning.asp */
   #bg-rain {
     position: fixed;
     inset: 0;
@@ -33,6 +62,12 @@
     z-index: 0;
   }
 
+  /* Style for each individual falling column of characters (created in
+     JavaScript, see setupBackgroundRain below). The animation-* properties
+     hook this element up to the @keyframes rule that follows; each column
+     is given its own random speed and start delay from JavaScript so they
+     don't all move in lockstep. will-change hints to the browser that this
+     element's position will keep changing, which can help performance. */
   .rain-char {
     position: absolute;
     top: -5vh;
@@ -45,11 +80,19 @@
     animation-iteration-count: infinite;
   }
 
+  /* @keyframes defines a reusable animation by name ("rain-fall") that any
+     CSS rule can refer to via the animation property. This one slides an
+     element straight down, from wherever it starts to 115% of the
+     viewport height - comfortably below the bottom of the screen.
+     Reference: https://www.w3schools.com/css/css3_animations.asp */
   @keyframes rain-fall {
     from { transform: translateY(0); }
     to   { transform: translateY(115vh); }
   }
 
+  /* The main play area where falling objects appear. right: var(--panel-width)
+     leaves a gap on the right for the score panel, using the custom
+     property defined at the top of this file. */
   #game-area {
     position: absolute;
     top: 0;
@@ -59,6 +102,11 @@
     overflow: hidden;
   }
 
+  /* The dark sidebar showing score, timer, high score, and combo.
+     display: flex + flex-direction: column stacks its children (the
+     .stat-group blocks below) vertically; align-items: center keeps them
+     horizontally centred within the panel.
+     Reference: https://www.w3schools.com/css/css3_flexbox.asp */
   #panel {
     position: absolute;
     top: 0;
@@ -74,6 +122,8 @@
     padding: 24px 12px;
   }
 
+  /* Wraps one label+value pair (e.g. the word "Score" and its number) so
+     they stay grouped together and space out evenly from the other stats. */
   .stat-group {
     display: flex;
     flex-direction: column;
@@ -81,6 +131,9 @@
     margin-bottom: 20px;
   }
 
+  /* Small caption text above each stat (SCORE, TIME, etc). text-transform:
+     uppercase converts the text to capitals automatically, so the HTML
+     itself can stay in normal, readable case. */
   #panel .label {
     font-size: 13px;
     letter-spacing: 1px;
@@ -89,15 +142,23 @@
     margin-bottom: 6px;
   }
 
+  /* The big score number. transition makes colour changes fade smoothly
+     over 0.15 seconds instead of snapping instantly between colours.
+     Reference: https://www.w3schools.com/css/css3_transitions.asp */
   #score {
     font-size: 42px;
     font-weight: 700;
     transition: color 0.15s;
   }
 
+  /* Extra classes toggled on/off the score element by JavaScript, to
+     briefly flash it green after a good score change or red after a bad
+     one (see updateScore() in the script below). */
   #score.flash-good { color: #6be675; }
   #score.flash-bad { color: #ff6b6b; }
 
+  /* Font sizes for the remaining stats: countdown timer, best score, and
+     the current combo multiplier. */
   #timer {
     font-size: 28px;
     font-weight: 700;
@@ -113,6 +174,7 @@
     color: #f4d35e;
   }
 
+  /* The small instructions blurb at the bottom of the panel. */
   #stats {
     font-size: 12px;
     color: #7f92a8;
@@ -120,6 +182,11 @@
     line-height: 1.6;
   }
 
+  /* The round mute button in the top-right corner. border-radius: 50% turns
+     a square box into a perfect circle. z-index: 30 keeps it on top of the
+     start/end screens (see .overlay further down, which uses z-index: 20)
+     so it's always visible and clickable, on every screen of the game.
+     Reference: https://www.w3schools.com/cssref/pr_pos_z-index.php */
   #mute-btn {
     position: fixed;
     top: 10px;
@@ -139,15 +206,26 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   }
 
+  /* :hover is a pseudo-class - a style that only applies while the mouse
+     pointer is over the element. It has no effect on touchscreens, which
+     is fine here since it's just a subtle desktop-only nicety.
+     Reference: https://www.w3schools.com/css/css_pseudo_classes.asp */
   #mute-btn:hover {
     background: #3c4a5c;
   }
 
+  /* Sizes whichever speaker icon (an inline SVG) is currently placed
+     inside the button. */
   #mute-btn svg {
     width: 16px;
     height: 16px;
   }
 
+  /* Every clickable object (duck, bomb, UFO, etc) uses this class.
+     user-select: none stops the player accidentally highlighting page text
+     while clicking rapidly, and the animation shorthand plays the
+     "pop-in" keyframes once, automatically, whenever a new element with
+     this class is added to the page. */
   .target {
     position: absolute;
     display: flex;
@@ -159,28 +237,41 @@
     animation: pop-in 0.12s ease-out;
   }
 
+  /* Makes each object's SVG icon fill its container div completely. */
   .target svg {
     width: 100%;
     height: 100%;
     overflow: visible;
   }
 
+  /* Growing/fading entrance animation used by .target above: starts tiny
+     and transparent, ends at full size and fully visible. */
   @keyframes pop-in {
     from { transform: scale(0.3); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
   }
 
+  /* Added by JavaScript when a normal (non-bomb) object is missed.
+     "forwards" keeps the element frozen on the animation's final frame
+     instead of jumping back to normal once it finishes, and
+     pointer-events: none stops a dying object from still being clickable
+     while it plays out. */
   .target.exploding {
     animation: explode 0.35s ease-out forwards;
     pointer-events: none;
   }
 
+  /* A three-step "explosion": the object grows, spins, and brightens
+     sharply, then shrinks further while fading out. Percentages let an
+     animation have several waypoints, not just a start and an end. */
   @keyframes explode {
     0%   { transform: scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
     40%  { transform: scale(1.6) rotate(15deg); opacity: 1; filter: brightness(2) saturate(3); }
     100% { transform: scale(2.2) rotate(30deg); opacity: 0; filter: brightness(2) saturate(3); }
   }
 
+  /* Used when a bomb times out safely (i.e. the player correctly left it
+     alone): it just shrinks and fades, with no explosion effect. */
   .target.fizzling {
     animation: fizzle 0.4s ease-in forwards;
     pointer-events: none;
@@ -191,6 +282,8 @@
     100% { transform: scale(0.5); opacity: 0; }
   }
 
+  /* Played when the player successfully clicks a normal object: a quick
+     grow-and-fade "pop" to confirm the hit registered. */
   .target.clicked-good {
     animation: pop-out 0.2s ease-in forwards;
     pointer-events: none;
@@ -201,6 +294,9 @@
     100% { transform: scale(1.4); opacity: 0; }
   }
 
+  /* The little "+1" / "-1" text that pops up wherever you click or miss.
+     It drifts upward (translateY) while fading out, giving a classic
+     "floating damage number" effect seen in lots of games. */
   .floater {
     position: absolute;
     font-weight: 700;
@@ -215,6 +311,9 @@
     100% { transform: translateY(-50px); opacity: 0; }
   }
 
+  /* Lets a small SVG icon sit inline with a line of text (used for the
+     bomb preview on the start screen), roughly aligned with the
+     surrounding letters instead of sitting on its own line. */
   .inline-icon {
     display: inline-block;
     width: 30px;
@@ -229,6 +328,8 @@
     height: 100%;
   }
 
+  /* The skull icon that appears briefly wherever a normal object was
+     missed; it simply fades to nothing over 1 second. */
   .skull-icon {
     position: absolute;
     pointer-events: none;
@@ -245,6 +346,11 @@
     100% { opacity: 0; }
   }
 
+  /* The "Chain broken!" message shown under the skull when a combo streak
+     ends. transform: translateX(-50%) shifts the element left by half of
+     its OWN width - a common trick for centring something horizontally
+     when you don't know its exact width in advance (text length varies).
+     white-space: nowrap stops the message wrapping onto a second line. */
   .chain-broken-text {
     position: absolute;
     transform: translateX(-50%);
@@ -256,6 +362,12 @@
     animation: skull-fade 1s ease-out forwards;
   }
 
+  /* A full-screen red tint used to punish clicking the bomb. It sits
+     invisible (opacity: 0) until JavaScript adds the .hit class below,
+     which plays a quick flash from fully visible back to invisible.
+     rgba() specifies a colour with transparency built in - the 4th
+     number (0.35) is the alpha/opacity channel, from 0 (see-through) to
+     1 (solid). */
   #flash-overlay {
     position: absolute;
     top: 0;
@@ -276,6 +388,11 @@
     100% { opacity: 0; }
   }
 
+  /* Shared style for the start screen and end screen: a near-opaque
+     full-screen panel that centres its content box both horizontally and
+     vertically using flexbox (align-items centres vertically,
+     justify-content centres horizontally, for a row/column-less flex
+     container with a single child). */
   .overlay {
     position: absolute;
     top: 0;
@@ -290,6 +407,8 @@
     text-align: center;
   }
 
+  /* Basic typography for the content box and text inside each overlay
+     screen. */
   .overlay .card {
     max-width: 420px;
     padding: 30px;
@@ -305,6 +424,8 @@
     line-height: 1.5;
   }
 
+  /* Styles the "Final Score: X" line on the end screen, with the number
+     itself set slightly bigger via the nested <strong> selector. */
   .overlay .score-line {
     font-size: 20px;
     color: var(--ink);
@@ -315,6 +436,10 @@
     font-size: 26px;
   }
 
+  /* Styles the top-3 scores list shown on the end screen. list-style: none
+     removes the browser's automatic numbering on the <ol> element - the
+     rank numbers you see ("1.", "2.", "3.") are typed out manually inside
+     the .rank span instead, which gives more control over how they look. */
   .leaderboard {
     margin: 14px 0;
   }
@@ -346,6 +471,7 @@
     font-weight: 700;
   }
 
+  /* Shared look for the "Start Game" and "Play Again" buttons. */
   .overlay button {
     margin-top: 18px;
     padding: 12px 28px;
@@ -361,6 +487,9 @@
     background: #3c4a5c;
   }
 
+  /* Lays the Easy/Medium/Hard buttons out in a row. gap adds even spacing
+     between flex children automatically, without needing separate margin
+     rules on each button. */
   .difficulty-picker {
     display: flex;
     gap: 8px;
@@ -368,6 +497,10 @@
     margin-top: 20px;
   }
 
+  /* The individual difficulty buttons. .selected (below) is toggled by
+     JavaScript onto whichever button the player last clicked, swapping it
+     to a filled dark style so it's obvious at a glance which difficulty
+     is currently active. */
   .difficulty-picker .diff-btn {
     margin-top: 0;
     padding: 8px 18px;
@@ -388,6 +521,7 @@
     color: #fff;
   }
 
+  /* Small credit line and version number under the Start Game button. */
   .credit {
     margin-top: 16px;
     font-size: 11px;
@@ -398,6 +532,9 @@
     color: #777;
   }
 
+  /* The big "3, 2, 1" countdown shown just before objects start spawning,
+     centred over the play area (not the whole window, so it doesn't
+     overlap the side panel). */
   #countdown {
     position: absolute;
     top: 0; left: 0; right: var(--panel-width); bottom: 0;
@@ -411,11 +548,30 @@
     pointer-events: none;
   }
 
+  /*
+    @media (max-width: 700px) applies everything inside these braces ONLY
+    when the browser window is 700px wide or narrower - e.g. on a phone.
+    This lets one page rearrange itself for small screens instead of
+    needing a completely separate mobile version.
+    Reference: https://www.w3schools.com/css/css3_mediaqueries.asp
+
+    Note on ordering: this block is placed at the very end of the
+    stylesheet on purpose. When two CSS rules have equal specificity, the
+    one that appears LATER in the file wins - so putting this block last
+    guarantees its overrides always win on narrow screens, even though
+    some of the same selectors (like #game-area) were already styled
+    higher up for desktop.
+  */
   @media (max-width: 700px) {
+    /* A second custom property, only defined inside this media query, so
+       it effectively only exists on narrow screens. */
     :root {
       --panel-height-mobile: 76px;
     }
 
+    /* On mobile the side panel becomes a top bar instead (see #panel
+       below), so the play area needs to start below it rather than
+       stopping short of it on the right. */
     #game-area {
       top: var(--panel-height-mobile);
       left: 0;
@@ -423,6 +579,9 @@
       bottom: 0;
     }
 
+    /* Switches the panel from a tall right-hand column (desktop) into a
+       short horizontal bar across the top (mobile) by changing
+       flex-direction from column to row. */
     #panel {
       top: 0;
       left: 0;
@@ -477,6 +636,8 @@
       height: 14px;
     }
 
+    /* Re-anchor these full-screen effects to sit below the new top bar
+       instead of covering the whole window. */
     #flash-overlay {
       top: var(--panel-height-mobile);
       left: 0;
@@ -495,11 +656,16 @@
 </head>
 <body>
 
+<!-- Background decoration only - see #bg-rain above and setupBackgroundRain() below. -->
 <div id="bg-rain"></div>
+
+<!-- JavaScript fills this empty div with clickable objects while a round is running. -->
 <div id="game-area"></div>
+
 <div id="flash-overlay"></div>
 <button id="mute-btn" aria-label="Mute sound" title="Mute sound"></button>
 
+<!-- The always-visible stats sidebar (or top bar, on mobile - see the media query above). -->
 <div id="panel">
   <div class="stat-group">
     <div class="label">Score</div>
@@ -520,6 +686,7 @@
   <div id="stats">Click objects to score &mdash; chain hits to build your combo.<br>Missed ones cost -1 and break your combo.<br>Never click the bomb (-5, also breaks combo).</div>
 </div>
 
+<!-- Shown before a round starts; hidden by startGame() in the script below. -->
 <div id="start-screen" class="overlay">
   <div class="card">
     <h1>Conspiracy Hunter</h1>
@@ -544,6 +711,7 @@
   </div>
 </div>
 
+<!-- Shown once the 60-second timer hits zero; see endGame() in the script below. -->
 <div id="end-screen" class="overlay" style="display:none;">
   <div class="card">
     <h1>Time's Up</h1>
@@ -556,10 +724,20 @@
   </div>
 </div>
 
+<!-- The "3, 2, 1" countdown text, shown briefly between clicking Start and objects appearing. -->
 <div id="countdown" style="display:none;"></div>
 
 <script>
+// The whole game is wrapped in an IIFE (Immediately Invoked Function
+// Expression) - a function defined and then called straight away, using
+// (function () { ... })(). Doing this keeps every variable declared below
+// private to this script, instead of leaking into the global scope where
+// it could accidentally clash with some other script on the page.
+// Reference: https://developer.mozilla.org/en-US/docs/Glossary/IIFE
 (function () {
+  // Grab references to the HTML elements we'll need to read from or
+  // update, once each, rather than re-searching the page every time.
+  // Reference: https://www.w3schools.com/jsref/met_document_getelementbyid.asp
   const gameArea = document.getElementById('game-area');
   const scoreEl = document.getElementById('score');
   const timerEl = document.getElementById('timer');
@@ -575,11 +753,20 @@
   const leaderboardListEl = document.getElementById('leaderboard-list');
   const countdownEl = document.getElementById('countdown');
 
+  // Builds the decorative falling-character background. This runs once,
+  // immediately, when the page loads (it's its own tiny IIFE) and creates
+  // a fixed number of <span> elements, each given a random column of
+  // characters, position, size, speed, and start delay. From then on the
+  // CSS animation (.rain-char / @keyframes rain-fall, above) does all the
+  // actual animating - JavaScript never has to touch these elements again.
   (function setupBackgroundRain() {
     const RAIN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqustuvwxwz0123456789#%&*?!@£€[]{};:~';
     const container = document.getElementById('bg-rain');
     const count = 64;
 
+    // Builds one column's worth of HTML: a random number of lines
+    // (10-20), each either a random character or a blank line, joined
+    // together with <br> tags so they stack vertically inside the <span>.
     function randomColumn() {
       const lineCount = 10 + Math.floor(Math.random() * 11); // 10-20 lines
       const lines = [];
@@ -589,6 +776,8 @@
       return lines.join('<br>');
     }
 
+    // Create `count` rain columns, each with randomised styling so they
+    // don't all look and move identically.
     for (let i = 0; i < count; i++) {
       const span = document.createElement('span');
       span.className = 'rain-char';
@@ -603,6 +792,12 @@
     }
   })();
 
+  // localStorage keys and core game state. localStorage lets a webpage
+  // save small pieces of text in the browser that stick around between
+  // visits (unlike ordinary variables, which reset every time the page
+  // reloads). It can only store strings, which is why numbers and arrays
+  // get converted with String(), parseInt(), and JSON further down.
+  // Reference: https://www.w3schools.com/jsref/prop_win_localstorage.asp
   const LEADERBOARD_KEY = 'conspiracyHunterLeaderboard';
   const LEGACY_HIGH_SCORE_KEY = 'conspiracyHunterHighScore'; // pre-leaderboard single high score, migrated below
   const MUTE_KEY = 'conspiracyHunterMuted';
@@ -611,6 +806,11 @@
   let streak = 0;
   let muted = localStorage.getItem(MUTE_KEY) === 'true';
 
+  // Load any saved leaderboard from localStorage. Data in localStorage is
+  // always stored as plain text, so JSON.parse() converts that text back
+  // into a real JavaScript array. The try/catch guards against missing or
+  // corrupted data throwing an error and breaking the page.
+  // Reference: https://www.w3schools.com/js/js_json_parse.asp
   let leaderboard = [];
   try {
     leaderboard = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
@@ -618,17 +818,22 @@
   } catch (e) {
     leaderboard = [];
   }
+  // If there's no leaderboard yet, but there IS an old single high score
+  // saved by an earlier version of this game, bring that score across as
+  // a starting point instead of losing it.
   if (leaderboard.length === 0) {
     const legacyScore = parseInt(localStorage.getItem(LEGACY_HIGH_SCORE_KEY) || '0', 10);
     if (legacyScore > 0) leaderboard = [legacyScore];
   }
   let highScore = leaderboard.length ? leaderboard[0] : 0;
   highscoreEl.textContent = highScore;
-  let activeTargets = []; // {x, y, size, el, timeoutId}
+  let activeTargets = []; // {x, y, size, el, timeoutId} - every object currently on screen
   let spawnTimer = null;
   let timerInterval = null;
   let gameStartTime = null;
 
+  // Tunable constants for the whole game, gathered in one place so
+  // they're easy to find and adjust without hunting through the code.
   const OBJECT_SIZE_MIN = 56;
   const OBJECT_SIZE_MAX = 84;
   const BOMB_LIFETIME_MS = 2000;
@@ -638,6 +843,9 @@
   const GAME_DURATION_MS = 60000;
   const BASE_RAMP_DURATION_MS = 55000; // Medium's ramp duration (time to reach max spawn rate)
 
+  // Each difficulty is just a named object holding two numbers. Looking
+  // values up by key (DIFFICULTIES[difficulty]) instead of a long chain of
+  // if/else statements makes it trivial to add a new difficulty later.
   const DIFFICULTIES = {
     easy:   { lifetime: 2000, rampDuration: BASE_RAMP_DURATION_MS * 1.5 }, // 50% slower ramp
     medium: { lifetime: 1500, rampDuration: BASE_RAMP_DURATION_MS },       // ramp as current default
@@ -647,6 +855,14 @@
   let normalLifetimeMs = DIFFICULTIES[difficulty].lifetime;
   let rampDurationMs = DIFFICULTIES[difficulty].rampDuration;
 
+  // Wire up the three difficulty buttons. querySelectorAll returns EVERY
+  // matching element as a list, so forEach attaches the same click handler
+  // to each one in turn. dataset.difficulty reads the button's
+  // data-difficulty="..." HTML attribute. classList.toggle(class,
+  // condition) adds the class when condition is true and removes it
+  // otherwise - here it's used to mark exactly one button as .selected.
+  // References: https://www.w3schools.com/jsref/met_document_queryselectorall.asp
+  //             https://www.w3schools.com/jsref/prop_element_classlist.asp
   const diffButtons = document.querySelectorAll('.diff-btn');
   diffButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -657,6 +873,15 @@
     });
   });
 
+  // Every object the player can click is drawn as inline SVG (Scalable
+  // Vector Graphics) - shapes described in a compact XML-like text format,
+  // rather than a picture file. Each entry below is a template literal (a
+  // string wrapped in backticks that can span multiple lines and contain
+  // line breaks freely) holding one complete <svg>. A few icons also use
+  // an SVG transform="rotate(N)" attribute on the outer <svg>, which spins
+  // the whole icon by N degrees around its centre - a quick way to tilt an
+  // icon without redrawing its individual shapes.
+  // SVG reference: https://www.w3schools.com/graphics/svg_intro.asp
   const ICONS = {
     duck: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <ellipse cx="38" cy="62" rx="30" ry="20"/>
@@ -837,10 +1062,18 @@
       <circle cx="71" cy="51" r="1.8" fill="#222" stroke="none"/>
     </svg>`
   };
+  // The pool of "safe" objects to randomly choose from when spawning (the
+  // bomb is handled as a special case in spawnObject() below, not part of
+  // this list).
   const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown', 'tv', 'satellite', 'wifi', 'phone5g', 'watertap', 'cube', 'hollowearth', 'turkey'];
 
+  // Show the actual bomb icon on the start screen, right next to the
+  // warning text, so players know exactly what to avoid.
   document.getElementById('bomb-preview').innerHTML = ICONS.bomb;
 
+  // A standalone SVG icon (not part of the clickable pool above) used
+  // purely for visual feedback when an object is missed - see
+  // showSkull() further down.
   const SKULL_ICON = `<svg viewBox="0 0 100 100">
     <path d="M50,14 C70,14 82,30 82,48 C82,60 76,68 70,73 L70,84 C70,87 67,89 64,89 L58,89 C55,89 53,87 53,84 L53,78 L47,78 L47,84 C47,87 45,89 42,89 L36,89 C33,89 30,87 30,84 L30,73 C24,68 18,60 18,48 C18,30 30,14 50,14 Z" fill="#eceff1" stroke="#222" stroke-width="4" stroke-linejoin="round"/>
     <ellipse cx="36" cy="46" rx="9" ry="11" fill="#222"/>
@@ -849,14 +1082,22 @@
     <path d="M40,74 L40,80 M46,74 L46,80 M54,74 L54,80 M60,74 L60,80" stroke="#222" stroke-width="3" stroke-linecap="round"/>
   </svg>`;
 
+  // Two small SVG icons for the mute button's two states, swapped by
+  // updateMuteIcon() below depending on the `muted` flag.
   const SPEAKER_ON_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M19 6a9 9 0 0 1 0 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`;
   const SPEAKER_OFF_ICON = `<svg viewBox="0 0 24 24" fill="none"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M15.5 9.5l5 5M20.5 9.5l-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
 
+  // Swaps the mute button's icon to match the current `muted` state. The
+  // condition ? a : b syntax below is a ternary operator - a compact,
+  // one-line if/else that evaluates to one value or the other.
+  // Reference: https://www.w3schools.com/js/js_comparisons.asp
   function updateMuteIcon() {
     muteBtn.innerHTML = muted ? SPEAKER_OFF_ICON : SPEAKER_ON_ICON;
   }
   updateMuteIcon();
 
+  // Flip the muted flag, remember the choice in localStorage (so it
+  // persists after a page reload), then refresh the icon to match.
   muteBtn.addEventListener('click', () => {
     muted = !muted;
     localStorage.setItem(MUTE_KEY, String(muted));
@@ -866,14 +1107,24 @@
   const COMBO_STEP = 3;   // consecutive hits needed to advance a multiplier tier
   const MAX_MULTIPLIER = 5;
 
+  // Converts a hit streak into a score multiplier: every COMBO_STEP
+  // consecutive hits adds +1 to the multiplier, capped at MAX_MULTIPLIER.
+  // Math.floor() rounds a division down to a whole number, and Math.min()
+  // stops the result ever exceeding the cap.
+  // Reference: https://www.w3schools.com/js/js_math.asp
   function getMultiplier(streakCount) {
     return Math.min(1 + Math.floor(streakCount / COMBO_STEP), MAX_MULTIPLIER);
   }
 
+  // Refreshes the "Combo" readout in the side panel to match the current
+  // streak.
   function updateComboDisplay() {
     comboEl.textContent = 'x' + getMultiplier(streak);
   }
 
+  // Creates a temporary skull icon at the given position (sized to match
+  // the object that was missed), then removes it again after 1 second -
+  // long enough for its CSS fade-out animation (see .skull-icon) to finish.
   function showSkull(x, y, size) {
     const skullSize = size * 0.55;
     const el = document.createElement('div');
@@ -887,6 +1138,8 @@
     setTimeout(() => el.remove(), 1000);
   }
 
+  // Same idea as showSkull() above, but for the "Chain broken!" text,
+  // positioned just underneath where the skull will appear.
   function showChainBroken(x, y, size) {
     const skullSize = size * 0.55;
     const skullBottom = y + (size - skullSize) / 2 + skullSize;
@@ -901,6 +1154,13 @@
 
   let audioCtx = null;
 
+  // All sound effects use the Web Audio API rather than pre-recorded audio
+  // files - every sound below is generated live from scratch. Browsers
+  // only allow audio to start after a user interaction, so this function
+  // is called from the Start button's click handler; it creates the
+  // shared AudioContext the first time, or resumes it if the browser had
+  // automatically suspended it.
+  // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
   function ensureAudio() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -909,6 +1169,11 @@
     }
   }
 
+  // The "successful click" sound: an oscillator (a basic electronic tone
+  // generator) sweeping quickly from 700Hz down to 180Hz, run through a
+  // gain node (a volume control) that fades from loud to silent - together
+  // giving a short descending "pop". Every sound function below follows
+  // this same oscillator + gain pattern.
   function playPop() {
     if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
@@ -924,6 +1189,8 @@
     osc.stop(t + 0.1);
   }
 
+  // A very quiet "shoop" played whenever any object spawns: pitch and
+  // volume both climb together, then stop abruptly instead of fading out.
   function playAppear() {
     if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
@@ -940,6 +1207,8 @@
     osc.stop(t + duration);
   }
 
+  // A short, sad, descending tone played when a non-bomb object times out
+  // unclicked.
   function playMiss() {
     if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
@@ -955,6 +1224,10 @@
     osc.stop(t + 0.35);
   }
 
+  // The bomb explosion sound: a falling sawtooth tone plus a burst of
+  // white noise (randomised static, built manually below sample-by-
+  // sample), layered together for a harsher "boom" than the plain
+  // oscillators used by the other sound effects.
   function playBoom() {
     if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
@@ -970,6 +1243,10 @@
     osc.start(t);
     osc.stop(t + 0.45);
 
+    // Build 0.3 seconds of white noise sample-by-sample: each value is a
+    // random number between -1 and 1, multiplied by a fade-out factor so
+    // the noise burst gets quieter towards the end instead of stopping
+    // abruptly.
     const bufferSize = Math.floor(audioCtx.sampleRate * 0.3);
     const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -985,6 +1262,9 @@
     noise.start(t);
   }
 
+  // Applies a score change (positive or negative), updates the on-screen
+  // number, and briefly flashes it green or red depending on whether the
+  // change was good or bad.
   function updateScore(delta) {
     score += delta;
     if (score > highScore) {
@@ -997,6 +1277,9 @@
     scoreEl.classList.add(delta >= 0 ? 'flash-good' : 'flash-bad');
   }
 
+  // Rebuilds the "Top Scores" list on the end screen from the leaderboard
+  // array, showing an em dash for any of the 3 slots that haven't been
+  // filled in yet.
   function renderLeaderboard() {
     leaderboardListEl.innerHTML = '';
     for (let i = 0; i < LEADERBOARD_SIZE; i++) {
@@ -1007,6 +1290,9 @@
     }
   }
 
+  // Adds this round's score to the leaderboard, re-sorts it highest-first,
+  // keeps only the top 3, and saves the result back to localStorage so it
+  // survives a page reload.
   function recordFinalScore(finalScore) {
     leaderboard.push(finalScore);
     leaderboard.sort((a, b) => b - a);
@@ -1016,6 +1302,8 @@
     highscoreEl.textContent = highScore;
   }
 
+  // Shows a short-lived "+1" / "-1" style label at a given position, then
+  // removes it again after its float-up animation (see .floater) finishes.
   function showFloater(x, y, size, text, color) {
     const f = document.createElement('div');
     f.className = 'floater';
@@ -1027,12 +1315,21 @@
     setTimeout(() => f.remove(), 850);
   }
 
+  // Objects fall slowly over time, so their on-screen position keeps
+  // changing after they spawn. This reads an element's LIVE position
+  // (relative to the game area) at the exact moment it's needed, using
+  // getBoundingClientRect() rather than relying on the coordinates it was
+  // originally created at.
+  // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Element/getBoundingClientRect
   function currentPos(el) {
     const r = el.getBoundingClientRect();
     const gr = gameArea.getBoundingClientRect();
     return { x: r.left - gr.left, y: r.top - gr.top };
   }
 
+  // Simple rectangle-overlap test: returns true if two square-ish objects
+  // (each given as {x, y, size}) would visually collide, with `pad` extra
+  // pixels of breathing room required between them.
   function rectsOverlap(a, b, pad) {
     return !(
       a.x + a.size + pad < b.x ||
@@ -1042,6 +1339,10 @@
     );
   }
 
+  // Picks a random spawn position for a new object of the given size,
+  // retrying up to 40 times until it finds one that doesn't overlap any
+  // currently active object. Returns null if it never finds a free spot,
+  // so the caller can simply skip that spawn rather than force an overlap.
   function findFreeSpot(size) {
     const areaW = gameArea.clientWidth;
     const areaH = gameArea.clientHeight;
@@ -1060,14 +1361,22 @@
     return null;
   }
 
+  // Starts an object's exit animation (by adding exitClass, e.g.
+  // "exploding") and takes it out of the active-objects list immediately,
+  // but waits for the animation to finish (450ms) before actually deleting
+  // the element from the page.
   function removeTarget(target, exitClass) {
     target.el.classList.add(exitClass);
     activeTargets = activeTargets.filter(t => t !== target);
     setTimeout(() => target.el.remove(), 450);
   }
 
+  // Creates one new clickable object: picks a random type and size, finds
+  // it a free spot, animates it falling down the screen, and sets up both
+  // a timeout (for if it's never clicked) and a click handler (for if it
+  // is). This is the single busiest function in the game.
   function spawnObject() {
-    const isBomb = Math.random() < BOMB_CHANCE;
+    const isBomb = Math.random() < BOMB_CHANCE; // 10% chance this spawn is a bomb
     const type = isBomb ? 'bomb' : NORMAL_TYPES[Math.floor(Math.random() * NORMAL_TYPES.length)];
     const size = OBJECT_SIZE_MIN + Math.random() * (OBJECT_SIZE_MAX - OBJECT_SIZE_MIN);
     const spot = findFreeSpot(size);
@@ -1098,6 +1407,10 @@
 
     let resolved = false;
 
+    // If the object is never clicked, this fires once `lifetime`
+    // milliseconds have passed: bombs just quietly disappear, but a
+    // missed normal object costs a point and triggers all the "miss"
+    // feedback (skull, sound, breaking the combo).
     const timeoutId = setTimeout(() => {
       if (resolved) return;
       resolved = true;
@@ -1119,6 +1432,10 @@
     }, lifetime);
     target.timeoutId = timeoutId;
 
+    // Runs when the player clicks/taps this specific object. pointerdown
+    // fires for mouse clicks, touches, and stylus input alike, so one
+    // handler covers desktop and mobile without extra code.
+    // Reference: https://www.w3schools.com/jsref/met_document_addeventlistener.asp
     const onActivate = (e) => {
       e.preventDefault();
       if (resolved) return;
@@ -1149,12 +1466,21 @@
     el.addEventListener('pointerdown', onActivate);
   }
 
+  // Calculates how long to wait before the next spawn, based on how far
+  // through the round we are. t goes from 0 (round start) to 1 (ramp
+  // fully complete), and the interval shrinks in a straight line from
+  // START_INTERVAL_MS down to END_INTERVAL_MS as t increases - this is
+  // called linear interpolation, often shortened to "lerp".
   function currentInterval() {
     const elapsed = Date.now() - gameStartTime;
     const t = Math.min(elapsed / rampDurationMs, 1);
     return START_INTERVAL_MS + (END_INTERVAL_MS - START_INTERVAL_MS) * t;
   }
 
+  // Schedules the next spawnObject() call, which then schedules the ONE
+  // after that, and so on - a repeating chain of setTimeout calls rather
+  // than a single setInterval, so the delay between spawns can change
+  // every time (see currentInterval above) as the round speeds up.
   function scheduleNext() {
     const interval = currentInterval();
     spawnTimer = setTimeout(() => {
@@ -1163,6 +1489,8 @@
     }, interval);
   }
 
+  // Runs every 200ms while a round is in progress: updates the on-screen
+  // countdown and ends the game once time runs out.
   function tickTimer() {
     const elapsed = Date.now() - gameStartTime;
     const remaining = Math.max(0, GAME_DURATION_MS - elapsed);
@@ -1172,6 +1500,9 @@
     }
   }
 
+  // Starts the actual round: records the start time (used by
+  // currentInterval/tickTimer to measure elapsed time), then kicks off
+  // the repeating timer and the very first spawn.
   function beginSpawning() {
     gameStartTime = Date.now();
     tickTimer();
@@ -1179,6 +1510,9 @@
     scheduleNext();
   }
 
+  // Called once the countdown reaches zero. Stops all timers, clears any
+  // objects still on screen, and shows the end screen with this round's
+  // final score and an updated leaderboard.
   function endGame() {
     if (timerInterval) clearInterval(timerInterval);
     if (spawnTimer) clearTimeout(spawnTimer);
@@ -1193,6 +1527,9 @@
     endScreen.style.display = 'flex';
   }
 
+  // Runs when the player clicks "Start Game" or "Play Again": resets all
+  // game state back to zero, then plays a short 2-1 countdown before
+  // calling beginSpawning() to actually start the round.
   function startGame() {
     ensureAudio();
     startScreen.style.display = 'none';
@@ -1225,6 +1562,7 @@
     }, 700);
   }
 
+  // Both buttons do exactly the same thing - start (or restart) a round.
   startBtn.addEventListener('click', startGame);
   restartBtn.addEventListener('click', startGame);
 })();
