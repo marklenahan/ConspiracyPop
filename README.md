@@ -1,43 +1,65 @@
 # Conspiracy Hunter
 
-A single-page HTML/JS click-dodge game with a conspiracy theory theme. Suspicious objects pop up around the screen — click them before they vanish, but watch out for the bomb.
+A single-page HTML/JS click-dodge game with a conspiracy theory theme. Suspicious objects fall slowly down the screen — click them before they vanish, but watch out for the bomb.
 
 Open [index.html](index.html) directly in a browser to play. No build step, no dependencies.
 
 ## How to play
 
-- Click "Start Game," wait for the 3-2-1 countdown, then objects start appearing around the screen.
-- Click (or tap) an object before it disappears (2 seconds) to score points.
-- Miss one and it explodes for **-1**, breaking your combo (see below).
-- One in ten objects is a **bomb**:
+- Pick a difficulty (see below), click "Start Game," wait for the 3-2-1 countdown, then objects start appearing and slowly falling down the screen.
+- Click (or tap) an object before it disappears to score points.
+- Miss one and it explodes for **-1**, breaking your combo and showing a fading skull icon with a "Chain broken!" message (if you had a streak going).
+- One in ten objects is a **bomb** (shown on the start screen so you know what to avoid):
   - Click it and lose **-5** points, breaking your combo.
   - Leave it alone and it fizzles out harmlessly after 2 seconds — no penalty, and your combo is unaffected.
-- You have **60 seconds** on the clock. When time runs out, you'll see your final score and the all-time high score (saved in the browser's `localStorage`), with a "Play Again" button to restart.
+- You have **60 seconds** on the clock. When time runs out, you'll see your final score and a top-3 leaderboard (see below), with a "Play Again" button to restart.
+
+## Difficulty
+
+An Easy / Medium / Hard picker sits above the "Start Game" button and controls both how long an object stays clickable and how quickly the spawn rate ramps up over the round:
+
+- **Easy** — 2 second clickable window; spawn-rate ramp 50% slower than default.
+- **Medium** (default) — 1.5 second window; spawn-rate ramp at the default pace.
+- **Hard** — 1 second window; spawn-rate ramp 30% faster than default.
+
+Regardless of difficulty, spawning starts at 1 object every 2 seconds and ramps up to a peak of 2 per second. Objects are placed so they never overlap each other at spawn time.
 
 ## Combo multiplier
 
 Chaining hits without a miss builds a streak. Every 3 consecutive hits bumps your multiplier up by one, capped at x5 — so points per click scale with accuracy, rewarding steady play over panic-clicking. The current multiplier is shown live in the "Combo" readout. Missing an object or clicking the bomb resets the streak back to x1.
 
-## Difficulty pacing
+## Falling icons
 
-Objects spawn slowly at first (1 every 2 seconds) and ramp up gradually to a peak rate of 2 per second, reached near the end of the 60-second round. Objects are placed so they never overlap each other.
+Objects spawn anywhere in the top 75% of the play area and drift slowly downward for as long as they're on screen. Fall speed is tuned so most objects stay comfortably in view, but some spawned deep in that zone may drift past the bottom edge before their timeout fires — that's expected, not a bug.
 
 ## Object set
 
 Bomb aside, objects are drawn from a themed pool of icons:
 
-Duck, black hat, white hat, binoculars, test tube, UFO, grey alien, target, dollar sign, red letter Q, pyramid (with Eye of Providence), magnifying glass, ball of red wool, airplane, syringe, moon, royal crown.
+Duck, black hat, white hat, binoculars, test tube, UFO, grey alien, target, dollar bill, red letter Q, pyramid (with Eye of Providence), magnifying glass, ball of red wool, airplane, syringe, moon, royal crown.
 
 The start screen shows what the bomb icon actually looks like, right next to the warning about it.
 
 ## Sound
 
-Pop and boom sound effects are synthesized live with the Web Audio API (no audio files) — a quick pitch-drop blip for a successful click, and a low sweep + noise burst when the bomb goes off. A mute button (top-right corner) is available on the start screen, during play, and on the end screen, and its state is remembered via `localStorage`.
+All sound effects are synthesized live with the Web Audio API (no audio files):
+
+- A soft rising "shoop" blip plays whenever any object spawns (including bombs).
+- A quick pitch-drop pop plays on a successful click.
+- A subtle, sad descending tone plays when a non-bomb object times out unclicked.
+- A low sweep + noise burst plays when the bomb goes off.
+
+A mute button (top-right corner) is available on the start screen, during play, and on the end screen, and its state is remembered via `localStorage`.
 
 ## Visual feedback
 
-- Missing an object shows a small skull icon that fades out over 1 second at that spot, in addition to the usual explode animation and `-1` floater.
+- Missing an object shows a small skull icon that fades out over 1 second at that spot, in addition to the usual explode animation and `-1` floater. If you had an active combo, a "Chain broken!" message fades in alongside it.
 - Clicking the bomb triggers a red screen flash and a bigger explosion animation.
+- A faint, decorative "Matrix"-style rain of falling character columns runs in the background at all times. It's purely cosmetic (`pointer-events: none`) and never affects hit detection.
+
+## Leaderboard
+
+Your top 3 scores are kept in the browser's `localStorage` and shown in full on the end screen after each round. The in-game panel shows just your current best for a quick reference while playing.
 
 ## Responsive layout
 
