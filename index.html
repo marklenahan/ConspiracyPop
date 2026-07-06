@@ -1,3 +1,8 @@
+<!--
+  v1.0 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  LinkedIn: https://www.linkedin.com/in/marklen/
+  GitHub:   https://github.com/marklenahan/ConspiracyPop
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -215,6 +220,17 @@
     100% { opacity: 0; }
   }
 
+  .chain-broken-text {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff6b6b;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: skull-fade 1s ease-out forwards;
+  }
+
   #flash-overlay {
     position: absolute;
     top: 0;
@@ -287,6 +303,16 @@
 
   .overlay button:hover {
     background: #3c4a5c;
+  }
+
+  .credit {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #999;
+  }
+
+  .credit a {
+    color: #777;
   }
 
   #countdown {
@@ -421,6 +447,11 @@
       You have <strong>60 seconds</strong>. Good luck, agent.
     </p>
     <button id="start-btn">Start Game</button>
+    <p class="credit">
+      v1.0 html/js game by Claude Code and Mark Lenahan
+      (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
+      <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
+    </p>
   </div>
 </div>
 
@@ -640,6 +671,18 @@
     setTimeout(() => el.remove(), 1000);
   }
 
+  function showChainBroken(x, y, size) {
+    const skullSize = size * 0.55;
+    const skullBottom = y + (size - skullSize) / 2 + skullSize;
+    const el = document.createElement('div');
+    el.className = 'chain-broken-text';
+    el.textContent = 'Chain broken!';
+    el.style.left = (x + size / 2) + 'px';
+    el.style.top = (skullBottom + 4) + 'px';
+    gameArea.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
   let audioCtx = null;
 
   function ensureAudio() {
@@ -784,6 +827,9 @@
         updateScore(-1);
         showFloater(spot.x, spot.y, size, '-1', '#ff6b6b');
         showSkull(spot.x, spot.y, size);
+        if (streak > 0) {
+          showChainBroken(spot.x, spot.y, size);
+        }
         streak = 0;
         updateComboDisplay();
       }
