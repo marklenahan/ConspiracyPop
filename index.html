@@ -1,5 +1,5 @@
 <!--
-  v1.3 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  v1.4 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
@@ -329,6 +329,33 @@
     background: #3c4a5c;
   }
 
+  .difficulty-picker {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .difficulty-picker .diff-btn {
+    margin-top: 0;
+    padding: 8px 18px;
+    font-size: 14px;
+    border: 2px solid #2b3440;
+    border-radius: 6px;
+    background: #fff;
+    color: #2b3440;
+    cursor: pointer;
+  }
+
+  .difficulty-picker .diff-btn:hover {
+    background: #eef1f4;
+  }
+
+  .difficulty-picker .diff-btn.selected {
+    background: #2b3440;
+    color: #fff;
+  }
+
   .credit {
     margin-top: 16px;
     font-size: 11px;
@@ -471,9 +498,14 @@
       Watch out for the <strong>bomb</strong> <span id="bomb-preview" class="inline-icon"></span> &mdash; click it and you lose 5 points (and your combo)! Leave it alone and it fizzles out safely.<br><br>
       You have <strong>60 seconds</strong>. Good luck, agent.
     </p>
+    <div class="difficulty-picker" role="radiogroup" aria-label="Difficulty">
+      <button type="button" class="diff-btn" data-difficulty="easy">Easy</button>
+      <button type="button" class="diff-btn selected" data-difficulty="medium">Medium</button>
+      <button type="button" class="diff-btn" data-difficulty="hard">Hard</button>
+    </div>
     <button id="start-btn">Start Game</button>
     <p class="credit">
-      v1.3 html/js game by Claude Code and Mark Lenahan
+      v1.4 html/js game by Claude Code and Mark Lenahan
       (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
       <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
     </p>
@@ -540,13 +572,31 @@
 
   const OBJECT_SIZE_MIN = 56;
   const OBJECT_SIZE_MAX = 84;
-  const NORMAL_LIFETIME_MS = 2000;
   const BOMB_LIFETIME_MS = 2000;
-  const RAMP_DURATION_MS = 55000; // time to reach max spawn rate (slow, steady ramp)
   const START_INTERVAL_MS = 2000; // 1 every 2s
   const END_INTERVAL_MS = 500;    // 2 per second
   const BOMB_CHANCE = 0.1;
   const GAME_DURATION_MS = 60000;
+  const BASE_RAMP_DURATION_MS = 55000; // Medium's ramp duration (time to reach max spawn rate)
+
+  const DIFFICULTIES = {
+    easy:   { lifetime: 2000, rampDuration: BASE_RAMP_DURATION_MS * 1.5 }, // 50% slower ramp
+    medium: { lifetime: 1500, rampDuration: BASE_RAMP_DURATION_MS },       // ramp as current default
+    hard:   { lifetime: 1000, rampDuration: BASE_RAMP_DURATION_MS * 0.7 }  // 30% faster ramp
+  };
+  let difficulty = 'medium';
+  let normalLifetimeMs = DIFFICULTIES[difficulty].lifetime;
+  let rampDurationMs = DIFFICULTIES[difficulty].rampDuration;
+
+  const diffButtons = document.querySelectorAll('.diff-btn');
+  diffButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficulty = btn.dataset.difficulty;
+      normalLifetimeMs = DIFFICULTIES[difficulty].lifetime;
+      rampDurationMs = DIFFICULTIES[difficulty].rampDuration;
+      diffButtons.forEach(b => b.classList.toggle('selected', b === btn));
+    });
+  });
 
   const ICONS = {
     duck: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -894,7 +944,7 @@
     gameArea.appendChild(el);
     playAppear();
 
-    const lifetime = isBomb ? BOMB_LIFETIME_MS : NORMAL_LIFETIME_MS;
+    const lifetime = isBomb ? BOMB_LIFETIME_MS : normalLifetimeMs;
 
     // Slow fall: conservative distance so an object never reaches the
     // bottom of the play area before its own timeout, even from the
@@ -959,7 +1009,7 @@
 
   function currentInterval() {
     const elapsed = Date.now() - gameStartTime;
-    const t = Math.min(elapsed / RAMP_DURATION_MS, 1);
+    const t = Math.min(elapsed / rampDurationMs, 1);
     return START_INTERVAL_MS + (END_INTERVAL_MS - START_INTERVAL_MS) * t;
   }
 
