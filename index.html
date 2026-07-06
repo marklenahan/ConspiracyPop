@@ -1,3 +1,8 @@
+<!--
+  v1.5 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  LinkedIn: https://www.linkedin.com/in/marklen/
+  GitHub:   https://github.com/marklenahan/ConspiracyPop
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,6 +23,31 @@
     background: #eef3f7;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     touch-action: manipulation;
+  }
+
+  #bg-rain {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .rain-char {
+    position: absolute;
+    top: -5vh;
+    font-family: "Courier New", monospace;
+    color: #7d8ba1;
+    line-height: 1.15;
+    will-change: transform;
+    animation-name: rain-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes rain-fall {
+    from { transform: translateY(0); }
+    to   { transform: translateY(115vh); }
   }
 
   #game-area {
@@ -215,6 +245,17 @@
     100% { opacity: 0; }
   }
 
+  .chain-broken-text {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 700;
+    color: #ff6b6b;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: skull-fade 1s ease-out forwards;
+  }
+
   #flash-overlay {
     position: absolute;
     top: 0;
@@ -274,6 +315,37 @@
     font-size: 26px;
   }
 
+  .leaderboard {
+    margin: 14px 0;
+  }
+
+  .leaderboard .label {
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9aa5b1;
+    margin-bottom: 4px;
+  }
+
+  .leaderboard ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .leaderboard li {
+    font-size: 18px;
+    color: var(--ink);
+    padding: 2px 0;
+  }
+
+  .leaderboard li .rank {
+    display: inline-block;
+    width: 22px;
+    color: #9aa5b1;
+    font-weight: 700;
+  }
+
   .overlay button {
     margin-top: 18px;
     padding: 12px 28px;
@@ -287,6 +359,43 @@
 
   .overlay button:hover {
     background: #3c4a5c;
+  }
+
+  .difficulty-picker {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .difficulty-picker .diff-btn {
+    margin-top: 0;
+    padding: 8px 18px;
+    font-size: 14px;
+    border: 2px solid #2b3440;
+    border-radius: 6px;
+    background: #fff;
+    color: #2b3440;
+    cursor: pointer;
+  }
+
+  .difficulty-picker .diff-btn:hover {
+    background: #eef1f4;
+  }
+
+  .difficulty-picker .diff-btn.selected {
+    background: #2b3440;
+    color: #fff;
+  }
+
+  .credit {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #999;
+  }
+
+  .credit a {
+    color: #777;
   }
 
   #countdown {
@@ -386,6 +495,7 @@
 </head>
 <body>
 
+<div id="bg-rain"></div>
 <div id="game-area"></div>
 <div id="flash-overlay"></div>
 <button id="mute-btn" aria-label="Mute sound" title="Mute sound"></button>
@@ -420,7 +530,17 @@
       Watch out for the <strong>bomb</strong> <span id="bomb-preview" class="inline-icon"></span> &mdash; click it and you lose 5 points (and your combo)! Leave it alone and it fizzles out safely.<br><br>
       You have <strong>60 seconds</strong>. Good luck, agent.
     </p>
+    <div class="difficulty-picker" role="radiogroup" aria-label="Difficulty">
+      <button type="button" class="diff-btn" data-difficulty="easy">Easy</button>
+      <button type="button" class="diff-btn selected" data-difficulty="medium">Medium</button>
+      <button type="button" class="diff-btn" data-difficulty="hard">Hard</button>
+    </div>
     <button id="start-btn">Start Game</button>
+    <p class="credit">
+      v1.5 html/js game by Claude Code and Mark Lenahan
+      (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
+      <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
+    </p>
   </div>
 </div>
 
@@ -428,7 +548,10 @@
   <div class="card">
     <h1>Time's Up</h1>
     <div class="score-line">Final Score: <strong id="final-score">0</strong></div>
-    <div class="score-line">Highest Score: <strong id="final-highscore">0</strong></div>
+    <div class="leaderboard">
+      <div class="label">Top Scores</div>
+      <ol id="leaderboard-list"></ol>
+    </div>
     <button id="restart-btn">Play Again</button>
   </div>
 </div>
@@ -449,15 +572,57 @@
   const endScreen = document.getElementById('end-screen');
   const restartBtn = document.getElementById('restart-btn');
   const finalScoreEl = document.getElementById('final-score');
-  const finalHighscoreEl = document.getElementById('final-highscore');
+  const leaderboardListEl = document.getElementById('leaderboard-list');
   const countdownEl = document.getElementById('countdown');
 
-  const HIGH_SCORE_KEY = 'conspiracyHunterHighScore';
+  (function setupBackgroundRain() {
+    const RAIN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*?!';
+    const container = document.getElementById('bg-rain');
+    const count = 32;
+
+    function randomColumn() {
+      const lineCount = 8 + Math.floor(Math.random() * 3); // 8-10 lines
+      const lines = [];
+      for (let j = 0; j < lineCount; j++) {
+        lines.push(Math.random() < 0.15 ? '&nbsp;' : RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)]);
+      }
+      return lines.join('<br>');
+    }
+
+    for (let i = 0; i < count; i++) {
+      const span = document.createElement('span');
+      span.className = 'rain-char';
+      span.innerHTML = randomColumn();
+      span.style.left = (Math.random() * 100) + 'vw';
+      span.style.fontSize = (12 + Math.random() * 10) + 'px';
+      span.style.opacity = (0.06 + Math.random() * 0.1).toFixed(2);
+      const duration = 10 + Math.random() * 14;
+      span.style.animationDuration = duration + 's';
+      span.style.animationDelay = (-Math.random() * duration) + 's';
+      container.appendChild(span);
+    }
+  })();
+
+  const LEADERBOARD_KEY = 'conspiracyHunterLeaderboard';
+  const LEGACY_HIGH_SCORE_KEY = 'conspiracyHunterHighScore'; // pre-leaderboard single high score, migrated below
   const MUTE_KEY = 'conspiracyHunterMuted';
+  const LEADERBOARD_SIZE = 3;
   let score = 0;
   let streak = 0;
   let muted = localStorage.getItem(MUTE_KEY) === 'true';
-  let highScore = parseInt(localStorage.getItem(HIGH_SCORE_KEY) || '0', 10);
+
+  let leaderboard = [];
+  try {
+    leaderboard = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    if (!Array.isArray(leaderboard)) leaderboard = [];
+  } catch (e) {
+    leaderboard = [];
+  }
+  if (leaderboard.length === 0) {
+    const legacyScore = parseInt(localStorage.getItem(LEGACY_HIGH_SCORE_KEY) || '0', 10);
+    if (legacyScore > 0) leaderboard = [legacyScore];
+  }
+  let highScore = leaderboard.length ? leaderboard[0] : 0;
   highscoreEl.textContent = highScore;
   let activeTargets = []; // {x, y, size, el, timeoutId}
   let spawnTimer = null;
@@ -466,13 +631,31 @@
 
   const OBJECT_SIZE_MIN = 56;
   const OBJECT_SIZE_MAX = 84;
-  const NORMAL_LIFETIME_MS = 2000;
   const BOMB_LIFETIME_MS = 2000;
-  const RAMP_DURATION_MS = 55000; // time to reach max spawn rate (slow, steady ramp)
   const START_INTERVAL_MS = 2000; // 1 every 2s
   const END_INTERVAL_MS = 500;    // 2 per second
   const BOMB_CHANCE = 0.1;
   const GAME_DURATION_MS = 60000;
+  const BASE_RAMP_DURATION_MS = 55000; // Medium's ramp duration (time to reach max spawn rate)
+
+  const DIFFICULTIES = {
+    easy:   { lifetime: 2000, rampDuration: BASE_RAMP_DURATION_MS * 1.5 }, // 50% slower ramp
+    medium: { lifetime: 1500, rampDuration: BASE_RAMP_DURATION_MS },       // ramp as current default
+    hard:   { lifetime: 1000, rampDuration: BASE_RAMP_DURATION_MS * 0.7 }  // 30% faster ramp
+  };
+  let difficulty = 'medium';
+  let normalLifetimeMs = DIFFICULTIES[difficulty].lifetime;
+  let rampDurationMs = DIFFICULTIES[difficulty].rampDuration;
+
+  const diffButtons = document.querySelectorAll('.diff-btn');
+  diffButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficulty = btn.dataset.difficulty;
+      normalLifetimeMs = DIFFICULTIES[difficulty].lifetime;
+      rampDurationMs = DIFFICULTIES[difficulty].rampDuration;
+      diffButtons.forEach(b => b.classList.toggle('selected', b === btn));
+    });
+  });
 
   const ICONS = {
     duck: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -577,8 +760,11 @@
       <circle cx="50" cy="50" r="22" fill="#c0392b"/>
       <circle cx="50" cy="50" r="10" fill="#fff"/>
     </svg>`,
-    dollar: `<svg viewBox="0 0 100 100">
-      <text x="50" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="bold" text-anchor="middle" fill="#1e8f4e">$</text>
+    dollar: `<svg viewBox="0 0 100 100" stroke="#2f7d4f" stroke-width="3" fill="none">
+      <rect x="8" y="32" width="84" height="36" rx="4" fill="#bfe8c9"/>
+      <ellipse cx="22" cy="50" rx="7" ry="9" fill="none" stroke="#2f7d4f" stroke-width="2"/>
+      <ellipse cx="78" cy="50" rx="7" ry="9" fill="none" stroke="#2f7d4f" stroke-width="2"/>
+      <text x="50" y="61" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="bold" text-anchor="middle" fill="#1e8f4e" stroke="none">$</text>
     </svg>`,
     qletter: `<svg viewBox="0 0 100 100">
       <text x="50" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="bold" text-anchor="middle" fill="#c0392b">Q</text>
@@ -640,6 +826,18 @@
     setTimeout(() => el.remove(), 1000);
   }
 
+  function showChainBroken(x, y, size) {
+    const skullSize = size * 0.55;
+    const skullBottom = y + (size - skullSize) / 2 + skullSize;
+    const el = document.createElement('div');
+    el.className = 'chain-broken-text';
+    el.textContent = 'Chain broken!';
+    el.style.left = (x + size / 2) + 'px';
+    el.style.top = (skullBottom + 4) + 'px';
+    gameArea.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
   let audioCtx = null;
 
   function ensureAudio() {
@@ -663,6 +861,37 @@
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(t);
     osc.stop(t + 0.1);
+  }
+
+  function playAppear() {
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    const duration = 0.1;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(500, t);
+    osc.frequency.exponentialRampToValueAtTime(1500, t + duration);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.08, t + duration);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + duration);
+  }
+
+  function playMiss() {
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(190, t + 0.3);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.35);
   }
 
   function playBoom() {
@@ -700,12 +929,30 @@
     if (score > highScore) {
       highScore = score;
       highscoreEl.textContent = highScore;
-      localStorage.setItem(HIGH_SCORE_KEY, String(highScore));
     }
     scoreEl.textContent = score;
     scoreEl.classList.remove('flash-good', 'flash-bad');
     void scoreEl.offsetWidth; // restart animation
     scoreEl.classList.add(delta >= 0 ? 'flash-good' : 'flash-bad');
+  }
+
+  function renderLeaderboard() {
+    leaderboardListEl.innerHTML = '';
+    for (let i = 0; i < LEADERBOARD_SIZE; i++) {
+      const li = document.createElement('li');
+      const value = leaderboard[i] !== undefined ? leaderboard[i] : '—';
+      li.innerHTML = '<span class="rank">' + (i + 1) + '.</span>' + value;
+      leaderboardListEl.appendChild(li);
+    }
+  }
+
+  function recordFinalScore(finalScore) {
+    leaderboard.push(finalScore);
+    leaderboard.sort((a, b) => b - a);
+    leaderboard = leaderboard.slice(0, LEADERBOARD_SIZE);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+    highScore = leaderboard[0];
+    highscoreEl.textContent = highScore;
   }
 
   function showFloater(x, y, size, text, color) {
@@ -717,6 +964,12 @@
     f.style.color = color;
     gameArea.appendChild(f);
     setTimeout(() => f.remove(), 850);
+  }
+
+  function currentPos(el) {
+    const r = el.getBoundingClientRect();
+    const gr = gameArea.getBoundingClientRect();
+    return { x: r.left - gr.left, y: r.top - gr.top };
   }
 
   function rectsOverlap(a, b, pad) {
@@ -732,7 +985,7 @@
     const areaW = gameArea.clientWidth;
     const areaH = gameArea.clientHeight;
     const maxX = Math.max(0, areaW - size);
-    const maxY = Math.max(0, areaH - size);
+    const maxY = Math.max(0, areaH * 0.75 - size);
     const attempts = 40;
     for (let i = 0; i < attempts; i++) {
       const candidate = {
@@ -770,20 +1023,35 @@
     const target = { x: spot.x, y: spot.y, size: size, el: el, type: type, timeoutId: null };
     activeTargets.push(target);
     gameArea.appendChild(el);
+    playAppear();
+
+    const lifetime = isBomb ? BOMB_LIFETIME_MS : normalLifetimeMs;
+
+    // Slow fall. Objects spawn across the top 75% of the play area and
+    // may drift past the bottom edge before timing out - that's fine,
+    // it just means that object exits the screen a little early.
+    const fallDistance = gameArea.clientHeight * 0.35;
+    el.style.transition = `top ${lifetime}ms linear`;
+    void el.offsetHeight; // force reflow so the transition picks up the starting position
+    el.style.top = (spot.y + fallDistance) + 'px';
 
     let resolved = false;
 
-    const lifetime = isBomb ? BOMB_LIFETIME_MS : NORMAL_LIFETIME_MS;
     const timeoutId = setTimeout(() => {
       if (resolved) return;
       resolved = true;
       if (isBomb) {
         removeTarget(target, 'fizzling');
       } else {
+        const pos = currentPos(el);
         removeTarget(target, 'exploding');
         updateScore(-1);
-        showFloater(spot.x, spot.y, size, '-1', '#ff6b6b');
-        showSkull(spot.x, spot.y, size);
+        showFloater(pos.x, pos.y, size, '-1', '#ff6b6b');
+        showSkull(pos.x, pos.y, size);
+        playMiss();
+        if (streak > 0) {
+          showChainBroken(pos.x, pos.y, size);
+        }
         streak = 0;
         updateComboDisplay();
       }
@@ -796,10 +1064,11 @@
       resolved = true;
       clearTimeout(timeoutId);
       el.removeEventListener('pointerdown', onActivate);
+      const pos = currentPos(el);
       if (isBomb) {
         removeTarget(target, 'exploding');
         updateScore(-5);
-        showFloater(spot.x, spot.y, size, '-5', '#ff3b3b');
+        showFloater(pos.x, pos.y, size, '-5', '#ff3b3b');
         flashOverlay.classList.remove('hit');
         void flashOverlay.offsetWidth;
         flashOverlay.classList.add('hit');
@@ -810,7 +1079,7 @@
         removeTarget(target, 'clicked-good');
         const points = getMultiplier(streak);
         updateScore(points);
-        showFloater(spot.x, spot.y, size, '+' + points, '#6be675');
+        showFloater(pos.x, pos.y, size, '+' + points, '#6be675');
         playPop();
         streak += 1;
         updateComboDisplay();
@@ -821,7 +1090,7 @@
 
   function currentInterval() {
     const elapsed = Date.now() - gameStartTime;
-    const t = Math.min(elapsed / RAMP_DURATION_MS, 1);
+    const t = Math.min(elapsed / rampDurationMs, 1);
     return START_INTERVAL_MS + (END_INTERVAL_MS - START_INTERVAL_MS) * t;
   }
 
@@ -858,7 +1127,8 @@
     });
     activeTargets = [];
     finalScoreEl.textContent = score;
-    finalHighscoreEl.textContent = highScore;
+    recordFinalScore(score);
+    renderLeaderboard();
     endScreen.style.display = 'flex';
   }
 
