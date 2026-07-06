@@ -1,5 +1,5 @@
 <!--
-  v2.0 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  v2.1 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
@@ -537,7 +537,7 @@
     </div>
     <button id="start-btn">Start Game</button>
     <p class="credit">
-      v2.0 html/js game by Claude Code and Mark Lenahan
+      v2.1 html/js game by Claude Code and Mark Lenahan
       (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
       <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
     </p>
@@ -755,28 +755,64 @@
       <path d="M28,70 L32,28 C32,20 68,20 68,28 L72,70 Z"/>
       <rect x="30" y="60" width="40" height="7" fill="#111" stroke="none"/>
     </svg>`,
-    target: `<svg viewBox="0 0 100 100" stroke="none" fill="none">
-      <circle cx="50" cy="50" r="34" fill="#fff" stroke="#c0392b" stroke-width="4"/>
-      <circle cx="50" cy="50" r="22" fill="#c0392b"/>
-      <circle cx="50" cy="50" r="10" fill="#fff"/>
-    </svg>`,
     dollar: `<svg viewBox="0 0 100 100" stroke="#2f7d4f" stroke-width="3" fill="none">
       <rect x="8" y="32" width="84" height="36" rx="4" fill="#bfe8c9"/>
       <ellipse cx="22" cy="50" rx="7" ry="9" fill="none" stroke="#2f7d4f" stroke-width="2"/>
       <ellipse cx="78" cy="50" rx="7" ry="9" fill="none" stroke="#2f7d4f" stroke-width="2"/>
       <text x="50" y="61" font-family="Georgia, 'Times New Roman', serif" font-size="30" font-weight="bold" text-anchor="middle" fill="#1e8f4e" stroke="none">$</text>
     </svg>`,
-    qletter: `<svg viewBox="0 0 100 100">
-      <text x="50" y="74" font-family="Georgia, 'Times New Roman', serif" font-size="74" font-weight="bold" text-anchor="middle" fill="#c0392b">Q</text>
+    qletter: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20,30 L20,90" stroke="#5a3a22" stroke-width="6"/>
+      <path d="M20,32 Q35,26 50,32 Q65,38 80,31 Q87,40 82,50 Q86,60 78,64 Q60,69 45,64 Q30,60 20,66 Z" fill="#f4d35e" stroke="#222" stroke-width="3"/>
+      <text x="51" y="56" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="bold" text-anchor="middle" fill="#c0392b" stroke="none">Q</text>
     </svg>`,
     pyramid: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <path d="M50,18 L86,80 L14,80 Z" fill="#d9b25c"/>
       <path d="M50,18 L50,80"/>
       <ellipse cx="50" cy="46" rx="8" ry="5" fill="#fff" stroke="#222"/>
       <circle cx="50" cy="46" r="2.5" fill="#222"/>
+    </svg>`,
+    tv: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M35,26 L22,10 M65,26 L78,10" fill="none"/>
+      <circle cx="22" cy="10" r="3" fill="#222" stroke="none"/>
+      <circle cx="78" cy="10" r="3" fill="#222" stroke="none"/>
+      <rect x="14" y="26" width="72" height="52" rx="4" fill="#6b4a2e"/>
+      <rect x="23" y="34" width="54" height="36" rx="10" fill="#c9c9c9"/>
+      <rect x="27" y="78" width="9" height="10" fill="#6b4a2e"/>
+      <rect x="64" y="78" width="9" height="10" fill="#6b4a2e"/>
+    </svg>`,
+    satellite: `<svg viewBox="0 0 100 100" stroke="#333" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M50,41 L50,22" fill="none"/>
+      <path d="M40,22 A10,6 0 0,1 60,22" fill="none"/>
+      <rect x="8" y="44" width="30" height="12" rx="2" fill="#3b82c4"/>
+      <path d="M14,44 L14,56 M22,44 L22,56 M30,44 L30,56" stroke="#1c5488" stroke-width="1.5"/>
+      <rect x="62" y="44" width="30" height="12" rx="2" fill="#3b82c4"/>
+      <path d="M68,44 L68,56 M76,44 L76,56 M84,44 L84,56" stroke="#1c5488" stroke-width="1.5"/>
+      <rect x="41" y="41" width="18" height="18" rx="2" fill="#c7c7c7"/>
+    </svg>`,
+    wifi: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="7" stroke-linecap="round" fill="none">
+      <circle cx="50" cy="82" r="5" fill="#222" stroke="none"/>
+      <path d="M35,66 A19,19 0 0,1 65,66"/>
+      <path d="M21,50 A40,40 0 0,1 79,50"/>
+      <path d="M7,34 A61,61 0 0,1 93,34"/>
+    </svg>`,
+    phone5g: `<svg viewBox="0 0 100 100" stroke="#222" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="30" y="8" width="40" height="84" rx="8" fill="#2b3440"/>
+      <rect x="35" y="16" width="30" height="60" rx="3" fill="#eaf4fb" stroke="none"/>
+      <circle cx="50" cy="84" r="3" fill="#8fa3b8" stroke="none"/>
+      <text x="50" y="52" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#2b3440" stroke="none">5G</text>
+    </svg>`,
+    watertap: `<svg viewBox="0 0 100 100" stroke-linecap="round" fill="none">
+      <path d="M26,94 L26,50 Q26,40 40,40" stroke="#c9c9c9" stroke-width="10"/>
+      <path d="M40,34 L40,50 Q40,60 50,60 L62,60 Q68,60 68,66" stroke="#8a8a8a" stroke-width="13"/>
+      <path d="M40,34 L40,14" stroke="#8a8a8a" stroke-width="13"/>
+      <path d="M26,14 L54,14" stroke="#8a8a8a" stroke-width="6"/>
+      <path d="M30,24 L50,4" stroke="#8a8a8a" stroke-width="6"/>
+      <path d="M30,4 L50,24" stroke="#8a8a8a" stroke-width="6"/>
+      <path d="M68,72 C68,78 62,83 62,88 C62,93 74,93 74,88 C74,83 68,78 68,72 Z" fill="#27ae60" stroke="none"/>
     </svg>`
   };
-  const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'target', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown'];
+  const NORMAL_TYPES = ['duck', 'hat', 'whitehat', 'binoculars', 'testtube', 'ufo', 'alien', 'dollar', 'qletter', 'pyramid', 'magnifier', 'wool', 'airplane', 'syringe', 'moon', 'crown', 'tv', 'satellite', 'wifi', 'phone5g', 'watertap'];
 
   document.getElementById('bomb-preview').innerHTML = ICONS.bomb;
 
