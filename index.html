@@ -970,7 +970,7 @@
     const areaW = gameArea.clientWidth;
     const areaH = gameArea.clientHeight;
     const maxX = Math.max(0, areaW - size);
-    const maxY = Math.max(0, areaH / 2 - size);
+    const maxY = Math.max(0, areaH * 0.75 - size);
     const attempts = 40;
     for (let i = 0; i < attempts; i++) {
       const candidate = {
@@ -1012,10 +1012,10 @@
 
     const lifetime = isBomb ? BOMB_LIFETIME_MS : normalLifetimeMs;
 
-    // Slow fall: conservative distance so an object never reaches the
-    // bottom of the play area before its own timeout, even from the
-    // deepest possible top-half spawn point.
-    const fallDistance = gameArea.clientHeight * 0.22;
+    // Slow fall. Objects spawn across the top 75% of the play area and
+    // may drift past the bottom edge before timing out - that's fine,
+    // it just means that object exits the screen a little early.
+    const fallDistance = gameArea.clientHeight * 0.35;
     el.style.transition = `top ${lifetime}ms linear`;
     void el.offsetHeight; // force reflow so the transition picks up the starting position
     el.style.top = (spot.y + fallDistance) + 'px';
