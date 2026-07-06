@@ -37,8 +37,8 @@
     position: absolute;
     top: -5vh;
     font-family: "Courier New", monospace;
-    color: #7d8ba1;
-    line-height: 1.15;
+    color: #84ac75;
+    line-height: 1.8;
     will-change: transform;
     animation-name: rain-fall;
     animation-timing-function: linear;
@@ -576,12 +576,12 @@
   const countdownEl = document.getElementById('countdown');
 
   (function setupBackgroundRain() {
-    const RAIN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*?!';
+    const RAIN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqustuvwxwz0123456789#%&*?!@£€[]{};:~';
     const container = document.getElementById('bg-rain');
-    const count = 32;
+    const count = 64;
 
     function randomColumn() {
-      const lineCount = 8 + Math.floor(Math.random() * 3); // 8-10 lines
+      const lineCount = 10 + Math.floor(Math.random() * 11); // 10-20 lines
       const lines = [];
       for (let j = 0; j < lineCount; j++) {
         lines.push(Math.random() < 0.15 ? '&nbsp;' : RAIN_CHARS[Math.floor(Math.random() * RAIN_CHARS.length)]);
@@ -595,7 +595,7 @@
       span.innerHTML = randomColumn();
       span.style.left = (Math.random() * 100) + 'vw';
       span.style.fontSize = (12 + Math.random() * 10) + 'px';
-      span.style.opacity = (0.06 + Math.random() * 0.1).toFixed(2);
+      span.style.opacity = (0.16 + Math.random() * 0.1).toFixed(2);
       const duration = 10 + Math.random() * 14;
       span.style.animationDuration = duration + 's';
       span.style.animationDelay = (-Math.random() * duration) + 's';
