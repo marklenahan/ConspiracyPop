@@ -1,5 +1,5 @@
 <!--
-  v1.0 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
+  v1.1 html/js game by Claude Code and Mark Lenahan (LinkedIn, GitHub)
   LinkedIn: https://www.linkedin.com/in/marklen/
   GitHub:   https://github.com/marklenahan/ConspiracyPop
 -->
@@ -448,7 +448,7 @@
     </p>
     <button id="start-btn">Start Game</button>
     <p class="credit">
-      v1.0 html/js game by Claude Code and Mark Lenahan
+      v1.1 html/js game by Claude Code and Mark Lenahan
       (<a href="https://www.linkedin.com/in/marklen/" target="_blank" rel="noopener">LinkedIn</a>,
       <a href="https://github.com/marklenahan/ConspiracyPop" target="_blank" rel="noopener">GitHub</a>)
     </p>
@@ -708,6 +708,36 @@
     osc.stop(t + 0.1);
   }
 
+  function playAppear() {
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, t);
+    osc.frequency.exponentialRampToValueAtTime(950, t + 0.04);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.06);
+  }
+
+  function playMiss() {
+    if (muted || !audioCtx) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(190, t + 0.3);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.35);
+  }
+
   function playBoom() {
     if (muted || !audioCtx) return;
     const t = audioCtx.currentTime;
@@ -813,6 +843,7 @@
     const target = { x: spot.x, y: spot.y, size: size, el: el, type: type, timeoutId: null };
     activeTargets.push(target);
     gameArea.appendChild(el);
+    playAppear();
 
     let resolved = false;
 
@@ -827,6 +858,7 @@
         updateScore(-1);
         showFloater(spot.x, spot.y, size, '-1', '#ff6b6b');
         showSkull(spot.x, spot.y, size);
+        playMiss();
         if (streak > 0) {
           showChainBroken(spot.x, spot.y, size);
         }
