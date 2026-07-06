@@ -118,87 +118,6 @@
     height: 16px;
   }
 
-  @media (max-width: 700px) {
-    :root {
-      --panel-height-mobile: 76px;
-    }
-
-    #game-area {
-      top: var(--panel-height-mobile);
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-
-    #panel {
-      top: 0;
-      left: 0;
-      right: 0;
-      width: 100%;
-      height: var(--panel-height-mobile);
-      flex-direction: row;
-      justify-content: center;
-      align-items: center;
-      gap: 14px;
-      padding: 6px 40px 6px 10px;
-    }
-
-    .stat-group {
-      margin-bottom: 0;
-    }
-
-    #panel .label {
-      font-size: 8px;
-      margin-bottom: 2px;
-    }
-
-    #score {
-      font-size: 20px;
-    }
-
-    #timer {
-      font-size: 16px;
-    }
-
-    #highscore {
-      font-size: 14px;
-    }
-
-    #combo {
-      font-size: 14px;
-    }
-
-    #stats {
-      display: none;
-    }
-
-    #mute-btn {
-      top: 6px;
-      right: 6px;
-      width: 24px;
-      height: 24px;
-    }
-
-    #mute-btn svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    #flash-overlay {
-      top: var(--panel-height-mobile);
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-
-    #countdown {
-      top: var(--panel-height-mobile);
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-  }
-
   .target {
     position: absolute;
     display: flex;
@@ -381,6 +300,87 @@
     color: var(--ink);
     z-index: 15;
     pointer-events: none;
+  }
+
+  @media (max-width: 700px) {
+    :root {
+      --panel-height-mobile: 76px;
+    }
+
+    #game-area {
+      top: var(--panel-height-mobile);
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #panel {
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: var(--panel-height-mobile);
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      padding: 6px 40px 6px 10px;
+    }
+
+    .stat-group {
+      margin-bottom: 0;
+    }
+
+    #panel .label {
+      font-size: 8px;
+      margin-bottom: 2px;
+    }
+
+    #score {
+      font-size: 20px;
+    }
+
+    #timer {
+      font-size: 16px;
+    }
+
+    #highscore {
+      font-size: 14px;
+    }
+
+    #combo {
+      font-size: 14px;
+    }
+
+    #stats {
+      display: none;
+    }
+
+    #mute-btn {
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+    }
+
+    #mute-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    #flash-overlay {
+      top: var(--panel-height-mobile);
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    #countdown {
+      top: var(--panel-height-mobile);
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
   }
 </style>
 </head>
